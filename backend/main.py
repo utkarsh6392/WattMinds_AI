@@ -1,34 +1,213 @@
 
-"""WattMinds FastAPI backend."""
+"""
+WattMinds 2.0 — FastAPI Backend
+
+Features:
+- Supabase authentication
+- Secure Bearer token verification
+- ML energy forecasting
+- Statistical anomaly detection
+- Isolation Forest pattern analysis
+- Appliance energy calculations
+- Weather-aware recommendations
+- Rule-based Energy Copilot
+- Frontend static file serving
+"""
 
 from __future__ import annotations
 
 import io
+import json
 import os
 import sys
+import urllib.error
+import urllib.request
+
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from dotenv import load_dotenv
+
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    UploadFile,
+)
+
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
 from pydantic import BaseModel, Field
 
+
+# =========================================================
+# 1. PROJECT CONFIGURATION
+# =========================================================
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 FRONTEND = ROOT / "frontend"
 
-sys.path.insert(0, str(SRC))
-os.chdir(ROOT)
+load_dotenv(ROOT / ".env")
 
-app = FastAPI(title="WattMinds API", version="2.0")
+sys.path.insert(0, str(SRC))
+
+app = FastAPI(
+    title="WattMinds API",
+    description=(
+        "AI-powered energy optimization and "
+        "decision-support platform."
+    ),
+    version="2.0",
+)
+
 MAX_CSV_SIZE = 15 * 1024 * 1024
 
+SUPABASE_URL = os.getenv(
+    "SUPABASE_URL", ""
+).strip().rstrip("/")
+
+SUPABASE_PUBLISHABLE_KEY = os.getenv(
+    "SUPABASE_PUBLISHABLE_KEY", ""
+).strip()
+
+
+# =========================================================
+# 2. SUPABASE PUBLIC CONFIGURATION
+# =========================================================
+
+@app.get("/api/public-config")
+def public_config():
+    """
+    Return browser-safe Supabase configuration.
+
+    The publishable key is designed to be public.
+    Never return a secret/service_role key here.
+    """
+
+    if not SUPABASE_URL or not SUPABASE_PUBLISHABLE_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase is not configured."
+        )
+
+    return {
+        "supabase_url": SUPABASE_URL,
+        "supabase_publishable_key": (
+            SUPABASE_PUBLISHABLE_KEY
+        ),
+    }
+
+
+# =========================================================
+# 3. SUPABASE TOKEN VERIFICATION
+# =========================================================
+
+def require_user(
+    authorization: str | None = Header(default=None)
+) -> dict:
+    """
+    Verify a user's Supabase access token.
+
+    Supabase Auth's /auth/v1/user endpoint validates
+    the access token and returns the authenticated user.
+
+    This approach works with both legacy HS256 and
+    newer asymmetric signing configurations.
+    """
+
+    if not SUPABASE_URL or not SUPABASE_PUBLISHABLE_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase is not configured."
+        )
+
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Please log in to continue.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    scheme, separator, token = authorization.partition(" ")
+
+    if (
+        not separator
+        or scheme.lower() != "bearer"
+        or not token.strip()
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authorization header.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token = token.strip()
+
+    request = urllib.request.Request(
+        SUPABASE_URL + "/auth/v1/user",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "apikey": SUPABASE_PUBLISHABLE_KEY,
+            "Accept": "application/json",
+        },
+        method="GET",
+    )
+
+    try:
+        with urllib.request.urlopen(
+            request,
+            timeout=8
+        ) as response:
+            user = json.loads(response.read())
+
+    except urllib.error.HTTPError as error:
+
+        if error.code in (400, 401, 403):
+            raise HTTPException(
+                status_code=401,
+                detail="Session invalid or expired.",
+                headers={
+                    "WWW-Authenticate": "Bearer"
+                },
+            ) from error
+
+        raise HTTPException(
+            status_code=502,
+            detail="Authentication service unavailable."
+        ) from error
+
+    except (
+        urllib.error.URLError,
+        TimeoutError,
+        ValueError,
+    ) as error:
+
+        raise HTTPException(
+            status_code=503,
+            detail="Cannot verify login right now."
+        ) from error
+
+    if not isinstance(user, dict) or not user.get("id"):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid session.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return user
+
+
+# =========================================================
+# 4. REQUEST MODELS
+# =========================================================
 
 class Appliance(BaseModel):
     name: str = Field(min_length=1)
@@ -40,28 +219,46 @@ class Appliance(BaseModel):
 class ManualRequest(BaseModel):
     appliances: list[Appliance] = Field(min_length=1)
     tariff: float = Field(default=8, ge=0)
-    target_savings: float = Field(default=500, ge=0)
+    target_savings: float = Field(
+        default=500,
+        ge=0
+    )
 
 
 class WeatherRequest(BaseModel):
     city: str = Field(min_length=2)
-    appliances: list[str] = Field(default_factory=list)
+    appliances: list[str] = Field(
+        default_factory=list
+    )
     tariff: float = Field(default=8, ge=0)
 
 
 class CopilotRequest(BaseModel):
-    question: str = Field(min_length=3, max_length=600)
-    appliances: list[Appliance] = Field(default_factory=list)
+    question: str = Field(
+        min_length=3,
+        max_length=600
+    )
+    appliances: list[Appliance] = Field(
+        default_factory=list
+    )
     tariff: float = Field(default=8, ge=0)
 
 
+# =========================================================
+# 5. JSON SERIALIZATION
+# =========================================================
+
 def safe_value(value: Any):
-    """Convert Pandas/NumPy results into JSON-compatible values."""
+    """
+    Convert Pandas / NumPy results into JSON-safe data.
+    """
 
     if isinstance(value, pd.DataFrame):
         return [
             safe_value(row)
-            for row in value.head(150).to_dict(orient="records")
+            for row in value.head(150).to_dict(
+                orient="records"
+            )
         ]
 
     if isinstance(value, pd.Series):
@@ -77,13 +274,20 @@ def safe_value(value: Any):
         }
 
     if isinstance(value, (list, tuple, set)):
-        return [safe_value(item) for item in value]
+        return [
+            safe_value(item)
+            for item in value
+        ]
 
     if isinstance(value, np.integer):
         return int(value)
 
     if isinstance(value, (float, np.floating)):
-        return float(value) if np.isfinite(value) else None
+        return (
+            float(value)
+            if np.isfinite(value)
+            else None
+        )
 
     if isinstance(value, np.bool_):
         return bool(value)
@@ -97,10 +301,19 @@ def safe_value(value: Any):
         return str(value)
 
 
-async def read_csv(file: UploadFile):
-    """Read and validate an uploaded CSV."""
+# =========================================================
+# 6. CSV UPLOAD VALIDATION
+# =========================================================
 
-    if not file.filename or not file.filename.lower().endswith(".csv"):
+async def read_csv(file: UploadFile):
+    """
+    Accept CSV uploads up to 15 MB.
+    """
+
+    if (
+        not file.filename
+        or not file.filename.lower().endswith(".csv")
+    ):
         raise HTTPException(
             status_code=400,
             detail="Please upload a CSV file."
@@ -123,21 +336,39 @@ async def read_csv(file: UploadFile):
     return content
 
 
+# =========================================================
+# 7. PUBLIC HEALTH CHECK
+# =========================================================
+
 @app.get("/api/health")
 def health():
     return {
         "status": "ok",
         "src_found": SRC.is_dir(),
         "model_found": (
-            ROOT / "models" / "final_energy_prediction_model.joblib"
+            ROOT
+            / "models"
+            / "final_energy_prediction_model.joblib"
         ).is_file(),
-        "modules": sorted(
-            path.name for path in SRC.glob("*.py")
-        ) if SRC.exists() else [],
+        "modules": (
+            sorted(
+                path.name
+                for path in SRC.glob("*.py")
+            )
+            if SRC.exists()
+            else []
+        ),
     }
 
 
-@app.post("/api/manual")
+# =========================================================
+# 8. APPLIANCE ENERGY ANALYSIS
+# =========================================================
+
+@app.post(
+    "/api/manual",
+    dependencies=[Depends(require_user)]
+)
 def manual_analysis(request: ManualRequest):
 
     from manual_energy_agent import run_energy_agent
@@ -171,13 +402,23 @@ def manual_analysis(request: ManualRequest):
         ) from error
 
 
-@app.post("/api/weather")
-def weather_analysis(request: WeatherRequest):
-    """Convert frontend appliance list into the expected DataFrame."""
+# =========================================================
+# 9. WEATHER ADVISOR
+# =========================================================
 
-    from weather_energy_agent import get_weather_energy_advice
+@app.post(
+    "/api/weather",
+    dependencies=[Depends(require_user)]
+)
+def weather_analysis(request: WeatherRequest):
+
+    from weather_energy_agent import (
+        get_weather_energy_advice
+    )
 
     try:
+        # The weather module expects a DataFrame,
+        # not a plain list of appliance names.
         appliance_table = pd.DataFrame({
             "Appliance": request.appliances,
             "name": request.appliances,
@@ -201,19 +442,27 @@ def weather_analysis(request: WeatherRequest):
         ) from error
 
 
-@app.post("/api/forecast")
+# =========================================================
+# 10. ML ENERGY FORECASTING
+# =========================================================
+
+@app.post(
+    "/api/forecast",
+    dependencies=[Depends(require_user)]
+)
 async def forecast_csv(
     file: UploadFile = File(...),
     tariff: float = 8.0,
 ):
+
     from energy_agent import predict_from_csv
 
     content = await read_csv(file)
 
-    if tariff < 0:
+    if not np.isfinite(tariff) or tariff < 0:
         raise HTTPException(
             status_code=400,
-            detail="Tariff cannot be negative."
+            detail="Tariff must be a nonnegative finite number."
         )
 
     source = io.BytesIO(content)
@@ -237,10 +486,21 @@ async def forecast_csv(
         ) from error
 
 
-@app.post("/api/anomalies")
-async def anomaly_analysis(file: UploadFile = File(...)):
+# =========================================================
+# 11. STATISTICAL ANOMALY DETECTION
+# =========================================================
 
-    from anomaly_detector import detect_energy_anomalies
+@app.post(
+    "/api/anomalies",
+    dependencies=[Depends(require_user)]
+)
+async def anomaly_analysis(
+    file: UploadFile = File(...)
+):
+
+    from anomaly_detector import (
+        detect_energy_anomalies
+    )
 
     content = await read_csv(file)
 
@@ -261,7 +521,11 @@ async def anomaly_analysis(file: UploadFile = File(...)):
         )
 
         selected = next(
-            (columns[name] for name in candidates if name in columns),
+            (
+                columns[name]
+                for name in candidates
+                if name in columns
+            ),
             None
         )
 
@@ -270,14 +534,19 @@ async def anomaly_analysis(file: UploadFile = File(...)):
                 "CSV must contain an Energy_kWh column."
             )
 
-        df = df.rename(columns={selected: "Energy_kWh"})
+        df = df.rename(
+            columns={selected: "Energy_kWh"}
+        )
 
         result = detect_energy_anomalies(
             df,
             column="Energy_kWh"
         )
 
-        anomalies = result[result["Anomaly"] == True]
+        anomalies = result[
+            result["Anomaly"] == True
+        ]
+
         count = len(anomalies)
 
         return {
@@ -286,11 +555,19 @@ async def anomaly_analysis(file: UploadFile = File(...)):
                 "rows_analyzed": len(result),
                 "anomaly_count": count,
                 "anomaly_rate_pct": (
-                    round(count * 100 / len(result), 2)
-                    if len(result) else 0
+                    round(
+                        count * 100 / len(result),
+                        2
+                    )
+                    if len(result)
+                    else 0
                 ),
-                "recent_readings": safe_value(result.tail(96)),
-                "anomalies": safe_value(anomalies.tail(50)),
+                "recent_readings": safe_value(
+                    result.tail(96)
+                ),
+                "anomalies": safe_value(
+                    anomalies.tail(50)
+                ),
             }
         }
 
@@ -301,9 +578,20 @@ async def anomaly_analysis(file: UploadFile = File(...)):
         ) from error
 
 
-@app.post("/api/copilot")
+# =========================================================
+# 12. ENERGY COPILOT
+# =========================================================
+
+@app.post(
+    "/api/copilot",
+    dependencies=[Depends(require_user)]
+)
 def energy_copilot(request: CopilotRequest):
-    """Rule-based tool-routing energy assistant."""
+    """
+    Tool-based, rule-driven energy assistant.
+
+    This is not a generative LLM chatbot.
+    """
 
     question = request.question.lower().strip()
 
@@ -333,7 +621,10 @@ def energy_copilot(request: CopilotRequest):
         )
 
         monthly_energy = daily * 30
-        monthly_cost = monthly_energy * request.tariff
+
+        monthly_cost = (
+            monthly_energy * request.tariff
+        )
 
         readings.append({
             "name": appliance.name,
@@ -341,8 +632,14 @@ def energy_copilot(request: CopilotRequest):
             "hours": appliance.hours,
             "quantity": appliance.quantity,
             "daily_kwh": round(daily, 3),
-            "monthly_kwh": round(monthly_energy, 3),
-            "monthly_cost": round(monthly_cost, 2),
+            "monthly_kwh": round(
+                monthly_energy,
+                3
+            ),
+            "monthly_cost": round(
+                monthly_cost,
+                2
+            ),
         })
 
     readings.sort(
@@ -351,36 +648,61 @@ def energy_copilot(request: CopilotRequest):
     )
 
     total_cost = sum(
-        item["monthly_cost"] for item in readings
+        item["monthly_cost"]
+        for item in readings
     )
 
     total_energy = sum(
-        item["monthly_kwh"] for item in readings
+        item["monthly_kwh"]
+        for item in readings
     )
 
     top = readings[0]
-    tools_used = ["appliance_energy_calculator"]
+
+    tools_used = [
+        "appliance_energy_calculator"
+    ]
+
     actions = []
 
     saving_keywords = (
-        "save", "saving", "reduce", "cut",
-        "optimiz", "tips", "suggest",
-        "कम", "बच"
+        "save",
+        "saving",
+        "reduce",
+        "cut",
+        "optimiz",
+        "tips",
+        "suggest",
+        "कम",
+        "बच"
     )
 
     ranking_keywords = (
-        "most", "highest", "top",
-        "maximum", "expensive",
-        "which", "सबसे", "ज्यादा"
+        "most",
+        "highest",
+        "top",
+        "maximum",
+        "expensive",
+        "which",
+        "सबसे",
+        "ज्यादा"
     )
 
-    if any(word in question for word in saving_keywords):
+    if any(
+        word in question
+        for word in saving_keywords
+    ):
 
-        tools_used.append("scenario_optimizer")
+        tools_used.append(
+            "scenario_optimizer"
+        )
 
         for item in readings[:3]:
 
-            reduction = min(item["hours"], 1.0)
+            reduction = min(
+                item["hours"],
+                1.0
+            )
 
             saved_energy = (
                 item["watts"]
@@ -390,35 +712,51 @@ def energy_copilot(request: CopilotRequest):
                 / 1000
             )
 
-            saved_money = saved_energy * request.tariff
+            saved_money = (
+                saved_energy * request.tariff
+            )
 
             actions.append({
                 "appliance": item["name"],
                 "reduction_hours_per_day": reduction,
-                "monthly_kwh_saved": round(saved_energy, 2),
-                "monthly_inr_saved": round(saved_money, 2),
+                "monthly_kwh_saved": round(
+                    saved_energy,
+                    2
+                ),
+                "monthly_inr_saved": round(
+                    saved_money,
+                    2
+                ),
             })
 
         best = max(
             actions,
-            key=lambda item: item["monthly_inr_saved"]
+            key=lambda item: (
+                item["monthly_inr_saved"]
+            )
         )
 
         answer = (
             f"Your estimated monthly electricity cost is "
-            f"₹{total_cost:,.2f} for {total_energy:.2f} kWh. "
+            f"₹{total_cost:,.2f} for "
+            f"{total_energy:.2f} kWh. "
             f"Reducing {best['appliance']} usage by "
-            f"{best['reduction_hours_per_day']:.1f} hour/day "
-            f"could save approximately "
-            f"₹{best['monthly_inr_saved']:,.2f} per month. "
-            "These are estimates based on your inputs."
+            f"{best['reduction_hours_per_day']:.1f} "
+            f"hour/day could save approximately "
+            f"₹{best['monthly_inr_saved']:,.2f} "
+            "per month. These are estimates "
+            "based on your inputs."
         )
 
-    elif any(word in question for word in ranking_keywords):
+    elif any(
+        word in question
+        for word in ranking_keywords
+    ):
 
         answer = (
-            f"{top['name']} is the highest-consuming entered "
-            f"appliance. It uses approximately "
+            f"{top['name']} is the highest-consuming "
+            "entered appliance. "
+            f"It uses approximately "
             f"{top['monthly_kwh']:.2f} kWh per month, "
             f"costing ₹{top['monthly_cost']:,.2f}. "
             f"Total estimated monthly cost is "
@@ -428,9 +766,10 @@ def energy_copilot(request: CopilotRequest):
     else:
 
         answer = (
-            f"Your entered appliances use approximately "
+            "Your entered appliances use approximately "
             f"{total_energy:.2f} kWh per month. "
-            f"Estimated monthly cost: ₹{total_cost:,.2f} "
+            f"Estimated monthly cost: "
+            f"₹{total_cost:,.2f} "
             f"at ₹{request.tariff:g}/kWh. "
             f"Highest contributor: {top['name']}."
         )
@@ -441,31 +780,48 @@ def energy_copilot(request: CopilotRequest):
             "answer": answer,
             "tools_used": tools_used,
             "type": "tool_based_decision_assistant",
-            "monthly_cost_inr": round(total_cost, 2),
+            "monthly_cost_inr": round(
+                total_cost,
+                2
+            ),
             "appliance_breakdown": readings,
             "actions": actions,
             "assumptions": (
-                "Rated power is constant, 30 days, flat tariff; "
-                "no real-time metering."
+                "Rated power is constant, 30 days, "
+                "flat tariff; no real-time metering."
             ),
         }
     }
 
 
-@app.post("/api/ml-patterns")
+# =========================================================
+# 13. ML PATTERN LAB — ISOLATION FOREST
+# =========================================================
+
+@app.post(
+    "/api/ml-patterns",
+    dependencies=[Depends(require_user)]
+)
 async def ml_patterns(
     file: UploadFile = File(...),
     contamination: float = 0.05,
 ):
+
     from sklearn.ensemble import IsolationForest
     from sklearn.preprocessing import StandardScaler
 
     content = await read_csv(file)
 
-    if not 0.01 <= contamination <= 0.20:
+    if (
+        not np.isfinite(contamination)
+        or not 0.01 <= contamination <= 0.20
+    ):
         raise HTTPException(
             status_code=400,
-            detail="Contamination must be between 0.01 and 0.20."
+            detail=(
+                "Contamination must be "
+                "between 0.01 and 0.20."
+            )
         )
 
     try:
@@ -492,7 +848,8 @@ async def ml_patterns(
 
         if energy_column is None:
             raise ValueError(
-                "CSV must contain Energy_kWh or a compatible column."
+                "CSV must contain Energy_kWh "
+                "or a compatible column."
             )
 
         energies = pd.to_numeric(
@@ -500,12 +857,21 @@ async def ml_patterns(
             errors="coerce"
         )
 
-        valid = energies.notna() & (energies >= 0)
+        valid = (
+            energies.notna()
+            & (energies >= 0)
+        )
 
-        sample = df.loc[valid].copy().head(20000)
+        sample = (
+            df.loc[valid]
+            .copy()
+            .head(20000)
+        )
 
         sample["Energy_kWh"] = (
-            energies[valid].head(20000).to_numpy()
+            energies[valid]
+            .head(20000)
+            .to_numpy()
         )
 
         if len(sample) < 50:
@@ -518,7 +884,10 @@ async def ml_patterns(
         hour_column = next(
             (
                 columns[name]
-                for name in ("hour_of_day", "hour")
+                for name in (
+                    "hour_of_day",
+                    "hour"
+                )
                 if name in columns
             ),
             None
@@ -531,7 +900,10 @@ async def ml_patterns(
                 errors="coerce"
             )
 
-            if hours.notna().all() and hours.between(0, 23).all():
+            if (
+                hours.notna().all()
+                and hours.between(0, 23).all()
+            ):
 
                 sample["hour_sin"] = np.sin(
                     2 * np.pi * hours / 24
@@ -541,9 +913,14 @@ async def ml_patterns(
                     2 * np.pi * hours / 24
                 )
 
-                features += ["hour_sin", "hour_cos"]
+                features += [
+                    "hour_sin",
+                    "hour_cos"
+                ]
 
-        X = StandardScaler().fit_transform(sample[features])
+        X = StandardScaler().fit_transform(
+            sample[features]
+        )
 
         model = IsolationForest(
             n_estimators=120,
@@ -552,12 +929,20 @@ async def ml_patterns(
             n_jobs=-1,
         )
 
-        sample["ml_outlier"] = model.fit_predict(X) == -1
-        sample["anomaly_score"] = -model.decision_function(X)
+        sample["ml_outlier"] = (
+            model.fit_predict(X) == -1
+        )
+
+        sample["anomaly_score"] = (
+            -model.decision_function(X)
+        )
 
         anomalies = (
             sample[sample["ml_outlier"]]
-            .sort_values("anomaly_score", ascending=False)
+            .sort_values(
+                "anomaly_score",
+                ascending=False
+            )
         )
 
         return {
@@ -565,22 +950,35 @@ async def ml_patterns(
             "result": {
                 "method": "Isolation Forest",
                 "total_scanned": len(sample),
-                "outliers": int(sample["ml_outlier"].sum()),
+                "outliers": int(
+                    sample["ml_outlier"].sum()
+                ),
                 "anomaly_fraction": round(
-                    float(sample["ml_outlier"].mean()), 4
+                    float(
+                        sample["ml_outlier"].mean()
+                    ),
+                    4
                 ),
                 "features_used": features,
                 "typical_energy_kwh": round(
-                    float(sample["Energy_kWh"].median()), 3
+                    float(
+                        sample["Energy_kWh"].median()
+                    ),
+                    3
                 ),
                 "highest_outlier_examples": safe_value(
                     anomalies[
-                        ["Energy_kWh", "anomaly_score"]
+                        [
+                            "Energy_kWh",
+                            "anomaly_score"
+                        ]
                     ].head(12)
                 ),
                 "limitations": (
-                    "Statistical outliers are not confirmed faults. "
-                    "Analysis is limited to the first 20,000 valid rows."
+                    "Statistical outliers are not "
+                    "confirmed faults. Analysis is "
+                    "limited to the first 20,000 "
+                    "valid rows."
                 ),
             }
         }
@@ -592,13 +990,24 @@ async def ml_patterns(
         ) from error
 
 
+# =========================================================
+# 14. SERVE THE FRONTEND
+# =========================================================
+
 @app.get("/")
 def index():
-    return FileResponse(FRONTEND / "index.html")
+    return FileResponse(
+        FRONTEND / "index.html"
+    )
 
+
+# Static files must be mounted LAST.
+# This allows /api/... routes to match first.
 
 app.mount(
     "/",
-    StaticFiles(directory=str(FRONTEND)),
+    StaticFiles(
+        directory=str(FRONTEND)
+    ),
     name="frontend"
 )
