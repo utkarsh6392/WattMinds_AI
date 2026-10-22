@@ -1,5 +1,6 @@
 # WattMinds 2.0
 ### AI-Powered Energy Analytics & Optimization Platform
+https://wattminds-ai.onrender.com
 
 WattMinds 2.0 is a full-stack, AI-powered energy analytics and decision-support platform designed to help users understand electricity consumption, identify unusual energy usage, estimate costs, and explore energy-saving opportunities.
 
