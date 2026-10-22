@@ -1,149 +1,115 @@
-# WattMinds
+# WattMinds 2.0
+### AI-Powered Energy Analytics & Optimization Platform
 
-### AI-Powered Energy Optimization and Intelligent Decision Support System
+WattMinds 2.0 is a full-stack, AI-powered energy analytics and decision-support platform designed to help users understand electricity consumption, identify unusual energy usage, estimate costs, and explore energy-saving opportunities.
 
-WattMinds is a full-stack energy analytics application that transforms electricity consumption data into forecasts, anomaly alerts, cost estimates, and actionable recommendations. It combines a Python/FastAPI backend with an interactive HTML, CSS, and JavaScript dashboard, machine-learning models, appliance-level analysis, and weather-aware guidance.
+The platform combines a modern, responsive dashboard with a Python FastAPI backend, machine learning utilities, weather-based recommendations, and Supabase authentication.
 
-The project is designed as a decision-support prototype: it helps users understand energy use and explore possible savings, but it does not directly control electrical equipment or measure consumption through a live smart meter.
+**Project Status:** Active Development  
+**Frontend:** HTML, CSS, Vanilla JavaScript  
+**Backend:** Python, FastAPI  
+**Authentication:** Supabase Auth  
+**Deployment:** Render
+
+---
 
 ## Key Features
 
-| Module | What it does | Implementation |
-| --- | --- | --- |
-| Energy Dashboard | Presents energy metrics and analysis results in a responsive interface with 3D-style visual effects. | HTML, CSS, JavaScript |
-| Consumption Forecasting | Estimates next-hour consumption from historical hourly energy readings. | Random Forest Regressor |
-| Statistical Anomaly Detection | Flags readings that deviate significantly from a historical baseline. | Rolling median and median absolute deviation |
-| ML Pattern Lab | Identifies unusual consumption observations in uploaded data. | Isolation Forest |
-| Appliance Studio | Estimates appliance-wise daily/monthly usage, cost, and possible savings. | Python calculations |
-| Energy Copilot | Routes supported energy questions to analysis tools and returns contextual responses. | Tool-based, rule-driven logic |
-| Weather Advisor | Provides weather-related energy suggestions for selected appliances. | Open-Meteo API |
-| What-If Simulator | Estimates the impact of changes in appliance usage and energy tariffs. | Scenario-based calculations |
+WattMinds provides eight integrated modules:
 
-> **AI capability note:** The Energy Copilot is currently a tool-based assistant, not a generative-LLM chatbot. ML anomaly flags indicate unusual observations; they are not proof of equipment faults or electricity waste.
+| Module | Description |
+|---|---|
+| Overview | Central dashboard for energy insights and platform navigation |
+| Appliance Studio | Analyze appliance-level electricity consumption and estimated costs |
+| ML Forecast | Generate energy predictions from uploaded CSV datasets using the configured prediction model |
+| Anomaly Center | Identify unusual energy readings and consumption anomalies |
+| Weather Advisor | Generate weather-aware energy recommendations |
+| Energy Copilot | Ask energy-related questions and receive calculation-based insights and recommendations |
+| ML Pattern Lab | Explore unusual consumption patterns using Isolation Forest |
+| What-If Simulator | Explore how changes in appliance usage could affect energy consumption and costs |
+
+### Authentication
+
+WattMinds uses Supabase Authentication to support:
+
+- Email and password signup
+- Secure login
+- Email verification, when enabled
+- Forgot-password and password-reset flows
+- Persistent authentication sessions
+- User profile display
+- Logout
+- Bearer-token verification for protected backend APIs
+
+Authentication is handled through Supabase Auth, while FastAPI verifies access tokens before processing protected requests.
+
+---
 
 ## Technology Stack
 
 | Layer | Technologies |
-| --- | --- |
+|---|---|
 | Frontend | HTML5, CSS3, JavaScript |
+| UI Design | Dark Theme, Bento Grid, Glassmorphism |
 | Backend | Python, FastAPI, Uvicorn |
-| Machine learning | scikit-learn, Random Forest, Isolation Forest |
-| Data processing | pandas, NumPy |
-| Model persistence | joblib |
-| External data | Open-Meteo API |
-| Development | Git, GitHub, VS Code |
+| Data Processing | Pandas, NumPy |
+| Machine Learning | Scikit-learn, Joblib |
+| Authentication | Supabase Auth |
+| API Communication | REST APIs, JSON, Fetch API |
+| Deployment | Render |
+| Version Control | Git, GitHub |
 
-## System Architecture
-
-```text
-                 User / Browser
-                       |
-           HTML + CSS + JavaScript
-                       |
-                FastAPI REST API
-                       |
-     +-----------------+------------------+
-     |                 |                  |
- Energy forecasting  Anomaly analysis  Appliance analysis
-     |                 |                  |
- Random Forest     Rolling statistics  Usage/cost formulas
-                   Isolation Forest
-     +-----------------+------------------+
-                       |
-           Tool-based Energy Copilot
-                       |
-         Recommendations and scenarios
-                       |
-               Web dashboard
-
-           Open-Meteo weather data
-                | (as needed)
-            Weather Advisor
-```
-
-## Machine Learning Workflow
-
-### Energy forecasting
-
-Historical electricity data is cleaned, checked for timestamp continuity, aggregated into hourly records, and converted into time-based and lagged features. A Random Forest regression pipeline estimates next-hour consumption.
-
-Features used by the saved forecasting pipeline:
-
-- `Hour_of_Day`, `Day_of_Week`, `Day_of_Month`, `Month`, `Is_Weekend`
-- `Lag_1h`, `Lag_2h`, `Lag_24h`
-- `Rolling_Mean_3h`, `Rolling_Mean_24h`
-
-### Anomaly detection
-
-The application includes two complementary approaches:
-
-1. **Statistical detection:** compares energy readings with a rolling historical median and measures deviations using median absolute deviation (MAD).
-2. **Isolation Forest:** an unsupervised model fitted on supplied consumption data to identify uncommon observations and patterns.
-
-Anomalies should be reviewed in context; unusual readings may reflect legitimate changes in usage.
-
-### Forecasting evaluation
-
-The project's recorded test-set results for the historical household dataset are:
-
-| Metric | Result |
-| --- | ---: |
-| Mean Absolute Error (MAE) | ~0.414 kWh |
-| Root Mean Squared Error (RMSE) | ~0.583 kWh |
-| R-squared (R²) | ~0.554 |
-| Weighted Absolute Percentage Error (WAPE) | ~43.99% |
-
-These results describe evaluation on the development dataset, not accuracy guaranteed for other households or facilities.
+---
 
 ## Project Structure
 
 ```text
 WattMinds/
+│
 ├── backend/
-│   ├── __init__.py
 │   └── main.py
+│
 ├── frontend/
 │   ├── index.html
 │   ├── styles.css
-│   └── app.js
+│   ├── app.js
+│   └── auth.js
+│
 ├── src/
-│   ├── anomaly_detector.py
-│   ├── csv_processor.py
 │   ├── energy_agent.py
-│   ├── energy_predictor.py
-│   ├── energy_recommender.py
 │   ├── manual_energy_agent.py
 │   ├── weather_energy_agent.py
-│   └── app.py
-├── notebooks/              # Data validation, EDA and ML experiments
-├── data/                   # Local datasets; excluded from Git
-├── models/                 # Local trained models; excluded from Git
-├── outputs/                # Locally generated outputs
+│   └── anomaly_detector.py
+│
+├── models/
+│   └── final_energy_prediction_model.joblib
+│
 ├── requirements-web.txt
+├── .gitignore
+├── .env
 └── README.md
 ```
 
-The original `src/app.py` is a Streamlit implementation retained in the project; the primary web interface is served through FastAPI and `frontend/`.
+**Note:** The structure above represents the expected application components. The trained model file is required for features that depend on it and may not be included in the GitHub repository.
+
+The `.env` file contains local configuration and must not be committed to GitHub.
+
+---
 
 ## Getting Started
 
-### Prerequisites
-
-- Python 3.10 or later (use a version compatible with the saved scikit-learn model)
-- Git
-- An internet connection for weather lookups
-- A compatible trained model for ML forecasting
-
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/utkarsh6392/WattMinds_AI.git
-cd WattMinds_AI
+git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
+cd YOUR_REPOSITORY
 ```
 
-### 2. Create and activate a virtual environment
+Replace the placeholders with your actual GitHub username and repository name.
 
-On Windows PowerShell:
+### 2. Create a Virtual Environment
+
+On Windows:
 
 ```powershell
 python -m venv .venv
@@ -157,69 +123,278 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install dependencies
+### 3. Install Dependencies
 
 ```bash
 python -m pip install -r requirements-web.txt
 ```
 
-If your environment is missing a scientific-computing dependency used by the local modules, install the compatible version for your saved model. Model artifacts created with different scikit-learn versions may not load reliably.
+The web application requires FastAPI, Uvicorn, Python Multipart, Python Dotenv, Pandas, NumPy, Requests, Joblib, and Scikit-learn.
 
-### 4. Set up data and model files
+### 4. Configure Supabase
 
-Large datasets and trained model artifacts are intentionally not tracked in Git. For forecasting, provide the compatible model file at:
+Create a `.env` file in the project root:
 
-```text
-models/final_energy_prediction_model.joblib
+```env
+SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 ```
 
-For CSV-based forecasting, provide hourly energy data in the format expected by the existing CSV processor, including `Hour` and `Energy_kWh` columns and enough consecutive hourly readings to calculate lag and rolling features. Some analysis notebooks require the original local datasets.
+Get the credentials from your Supabase project's settings.
 
-**Note:** Cloning this repository alone will not reproduce the trained model without access to the corresponding dataset and training artifacts.
+Only use the publishable key in this configuration. Never expose a Supabase secret key or service-role key through a public API.
 
-### 5. Run the web application
+In Supabase:
+
+1. Open Authentication settings.
+2. Enable email authentication.
+3. Configure the Site URL.
+4. Add the appropriate local and production redirect URLs.
+
+For local development, use:
+
+```text
+http://localhost:8000
+http://127.0.0.1:8000
+```
+
+### 5. Run the Application
 
 From the project root:
 
 ```bash
-python -m uvicorn backend.main:app --reload
+python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Open **http://127.0.0.1:8000** in your browser. The FastAPI API documentation, if enabled, is available at **http://127.0.0.1:8000/docs**.
+Open:
 
-## Example Use Cases
+```text
+http://127.0.0.1:8000
+```
 
-- **Household monitoring:** inspect consumption trends, identify unusual readings, and estimate monthly appliance costs.
-- **Energy-saving exploration:** change appliance operating hours and compare projected savings before making decisions.
-- **Forecasting experiments:** upload supported hourly energy data to estimate near-term demand.
-- **Weather-aware recommendations:** explore how local conditions may affect cooling or lighting usage.
-
-## Limitations
-
-- The forecasting model was trained on historical single-household electricity data; generalization to other facilities is limited.
-- The current application is not connected to a live smart meter or IoT control system.
-- Appliance costs and potential savings are estimates based on user-provided assumptions.
-- Unsupervised and statistical anomaly detectors surface possible outliers but do not determine their underlying causes.
-- The Energy Copilot uses structured tool routing and does not independently reason through an external LLM.
-- Weather information requires access to a third-party API.
-- Large training datasets and model files are not included in this GitHub repository.
-
-## Future Improvements
-
-- LLM-powered assistant with auditable tool calls and explanations
-- Explainable ML predictions and feature contributions
-- Live smart-meter and IoT integrations
-- Advanced time-series forecasting and peak-demand estimation
-- User accounts, saved facilities, and historical comparisons
-- Downloadable reports and automated energy alerts
-- Renewable energy and solar-generation analysis
-
-## Project Information
-
-**Type:** Academic major project / energy analytics prototype  
-**Status:** Active development  
-**Repository:** [github.com/utkarsh6392/WattMinds_AI](https://github.com/utkarsh6392/WattMinds_AI)
+The application should display the authentication interface. After successful login, users can access the WattMinds dashboard.
 
 ---
 
-*WattMinds — Turning Energy Data into Informed Decisions.*
+## API Documentation
+
+FastAPI provides interactive API documentation at:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+### Main API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/health` | Check backend status |
+| GET | `/api/public-config` | Retrieve browser-safe Supabase configuration |
+| POST | `/api/manual` | Analyze appliance energy usage |
+| POST | `/api/forecast` | Generate energy predictions from CSV data |
+| POST | `/api/anomalies` | Detect unusual energy readings |
+| POST | `/api/weather` | Generate weather-aware energy recommendations |
+| POST | `/api/copilot` | Process energy-related questions |
+| POST | `/api/ml-patterns` | Detect unusual consumption patterns using machine learning |
+
+Protected API endpoints require a valid Supabase access token.
+
+Example authorization header:
+
+```http
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+---
+
+## CSV Dataset Support
+
+WattMinds supports CSV-based energy analysis.
+
+The backend accepts CSV uploads for compatible forecasting and anomaly-detection features.
+
+For the anomaly detection endpoint, a dataset should contain an `Energy_kWh` column.
+
+Example:
+
+```csv
+Energy_kWh
+1.25
+1.40
+1.32
+5.90
+1.28
+```
+
+The backend applies file validation and a maximum upload size of 15 MB.
+
+Different machine learning modules may require additional columns or a particular input structure.
+
+---
+
+## Machine Learning
+
+WattMinds combines existing energy-analysis modules with machine learning techniques.
+
+### Energy Forecasting
+
+Uses the configured trained prediction model to estimate energy consumption from compatible datasets.
+
+### Anomaly Detection
+
+Analyzes energy readings to identify unusual consumption behavior.
+
+### ML Pattern Analysis
+
+Uses Isolation Forest to detect statistical outliers in energy-consumption datasets.
+
+### Energy Recommendations
+
+Provides appliance-level calculations, estimated electricity costs, and potential energy-saving suggestions.
+
+**Important:** Machine learning outputs are estimates and should not be treated as guaranteed electricity savings or utility-billing measurements.
+
+---
+
+## Deployment on Render
+
+WattMinds can be deployed as a single Python Web Service on Render.
+
+### Step 1: Push the Project to GitHub
+
+```bash
+git add .
+git commit -m "Prepare WattMinds for deployment"
+git push
+```
+
+### Step 2: Create a Render Web Service
+
+Open [Render Dashboard](https://dashboard.render.com).
+
+Select **New → Web Service** and connect your GitHub repository.
+
+Use the following configuration:
+
+| Setting | Value |
+|---|---|
+| Runtime | Python |
+| Region | Singapore (recommended for users in India) |
+| Branch | main |
+| Root Directory | Leave blank |
+| Build Command | `pip install -r requirements-web.txt` |
+| Start Command | `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` |
+
+Select an available instance type appropriate for the application's memory and performance requirements.
+
+### Step 3: Add Environment Variables
+
+In the Render Environment section, configure:
+
+```env
+SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
+```
+
+Do not upload your `.env` file to GitHub.
+
+### Step 4: Deploy
+
+Deploy the service and wait for the build and startup process to complete.
+
+After deployment, Render will provide a URL similar to:
+
+```text
+https://your-service.onrender.com
+```
+
+### Step 5: Update Supabase Redirect URLs
+
+In Supabase Dashboard → Authentication → URL Configuration, set the production Site URL to your actual Render URL.
+
+Add the production URL to the allowed redirect URLs:
+
+```text
+https://your-service.onrender.com/**
+```
+
+Retain local development redirect URLs if needed.
+
+### Step 6: Verify Deployment
+
+Check the following:
+
+```text
+https://your-service.onrender.com/api/health
+https://your-service.onrender.com/api/public-config
+https://your-service.onrender.com/docs
+```
+
+Then test signup, login, dashboard access, API operations, and logout.
+
+**Deployment note:** If the trained machine learning model is excluded from Git through `.gitignore`, it will not automatically be available on Render. Model-dependent features require the model artifact to be supplied through an appropriate deployment mechanism.
+
+---
+
+## Security
+
+The application follows several basic security practices:
+
+- Supabase Auth manages user authentication.
+- Protected backend endpoints verify access tokens.
+- Environment variables store deployment configuration.
+- `.gitignore` excludes local environment files and private keys.
+- Uploaded CSV files are validated before processing.
+- Backend request models validate input values.
+
+The Supabase publishable key is public by design. Secret keys and service-role keys must never be exposed in frontend code or public configuration endpoints.
+
+Additional security testing, monitoring, and production hardening are recommended before handling sensitive or business-critical data.
+
+---
+
+## Future Enhancements
+
+Potential improvements include:
+
+- Historical energy consumption tracking
+- Persistent user-specific analytics
+- Smart meter and IoT integration
+- Real-time monitoring
+- Advanced forecasting models
+- Downloadable analytics reports
+- Notification and alert systems
+- Multi-property energy management
+- Personalized energy-saving plans
+
+---
+
+## Contributing
+
+Contributions and suggestions are welcome.
+
+To contribute:
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Test your changes locally.
+5. Open a pull request describing the improvements.
+
+---
+
+## Disclaimer
+
+WattMinds is an energy analytics and decision-support project.
+
+Forecasts, anomaly scores, electricity costs, and savings recommendations depend on the supplied data, model quality, tariff assumptions, and operating conditions. Results should be interpreted as estimates.
+
+---
+
+## License
+
+No license is specified in this README. Refer to the repository's `LICENSE` file, if present, for usage and redistribution permissions.
+
+---
+
+**WattMinds 2.0 — Smarter Energy Insights, Better Decisions.**
