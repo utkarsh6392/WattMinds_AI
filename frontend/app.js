@@ -1,12 +1,14 @@
 
 "use strict";
 
-/* ============================================
-   WATTMINDS 2.0 - BENTO DARK EDITION
-   Frontend: HTML / CSS / Vanilla JavaScript
-   ============================================ */
+/* =====================================================
+   WATTMINDS 2.0 - RESPONSIVE WEB APPLICATION
+   Vanilla JavaScript + FastAPI Integration
+   ===================================================== */
 
-// ---------- Helpers ----------
+// -------------------------
+// 1. Utility Functions
+// -------------------------
 
 const $ = (id) => document.getElementById(id);
 
@@ -31,7 +33,9 @@ const safe = (value) =>
   })[char]);
 
 function first(object, keys, fallback = undefined) {
-  if (!object || typeof object !== "object") return fallback;
+  if (!object || typeof object !== "object") {
+    return fallback;
+  }
 
   for (const key of keys) {
     if (object[key] !== undefined && object[key] !== null) {
@@ -43,7 +47,7 @@ function first(object, keys, fallback = undefined) {
 }
 
 function numeric(value) {
-  if (value === "" || value === null || value === undefined) {
+  if (value === null || value === undefined || value === "") {
     return null;
   }
 
@@ -53,12 +57,13 @@ function numeric(value) {
 
 let toastTimer;
 
-function toast(message, error = false) {
+function toast(message, isError = false) {
   const element = $("toast");
+
   if (!element) return;
 
-  element.textContent = message;
-  element.className = "toast show" + (error ? " error" : "");
+  element.textContent = String(message);
+  element.className = "toast show" + (isError ? " error" : "");
 
   clearTimeout(toastTimer);
 
@@ -67,7 +72,9 @@ function toast(message, error = false) {
   }, 4700);
 }
 
-// ---------- API ----------
+// -------------------------
+// 2. Backend API
+// -------------------------
 
 async function api(path, options = {}) {
   let response;
@@ -76,7 +83,7 @@ async function api(path, options = {}) {
     response = await fetch("/api/" + path, options);
   } catch {
     throw new Error(
-      "Cannot connect to FastAPI. Start the backend server."
+      "Cannot reach FastAPI. Start the WattMinds server."
     );
   }
 
@@ -103,24 +110,66 @@ async function api(path, options = {}) {
   return payload;
 }
 
-async function withLoading(button, callback) {
-  const previousText = button.textContent;
+async function withLoading(button, task) {
+  const oldText = button.textContent;
 
   button.disabled = true;
   button.textContent = "Working...";
 
   try {
-    await callback();
+    await task();
   } catch (error) {
     console.error(error);
     toast(error.message || String(error), true);
   } finally {
     button.disabled = false;
-    button.textContent = previousText;
+    button.textContent = oldText;
   }
 }
 
-// ---------- Navigation ----------
+// -------------------------
+// 3. Navigation
+// -------------------------
+
+const backdrop = document.querySelector(
+  ".mobile-nav-backdrop"
+);
+
+function closeMenu() {
+  $("sidebar").classList.remove("open");
+
+  if (backdrop) {
+    backdrop.classList.remove("show");
+  }
+
+  $("menu-btn").setAttribute("aria-expanded", "false");
+  $("menu-btn").setAttribute(
+    "aria-label",
+    "Open navigation"
+  );
+
+  document.body.style.overflow = "";
+}
+
+function toggleMenu() {
+  const isOpen = $("sidebar").classList.toggle("open");
+
+  if (backdrop) {
+    backdrop.classList.toggle("show", isOpen);
+  }
+
+  $("menu-btn").setAttribute(
+    "aria-expanded",
+    String(isOpen)
+  );
+
+  $("menu-btn").setAttribute(
+    "aria-label",
+    isOpen ? "Close navigation" : "Open navigation"
+  );
+
+  document.body.style.overflow = isOpen ? "hidden" : "";
+}
 
 function navigate(view) {
   if (!$("view-" + view)) return;
@@ -133,14 +182,19 @@ function navigate(view) {
   });
 
   document.querySelectorAll(".nav-item").forEach((element) => {
-    element.classList.toggle(
-      "active",
-      element.dataset.view === view
-    );
+    const active = element.dataset.view === view;
+
+    element.classList.toggle("active", active);
+
+    if (active) {
+      element.setAttribute("aria-current", "page");
+    } else {
+      element.removeAttribute("aria-current");
+    }
   });
 
   const link = document.querySelector(
-    '.nav-item[data-view="' + view + '"]'
+    `.nav-item[data-view="${view}"]`
   );
 
   if (link && $("breadcrumb-current")) {
@@ -148,18 +202,12 @@ function navigate(view) {
       link.textContent.replace("⌘1", "").trim();
   }
 
-  const sidebar = $("sidebar");
-
-  if (sidebar) sidebar.classList.remove("open");
-
-  const menu = $("menu-btn");
-
-  if (menu) menu.setAttribute("aria-expanded", "false");
+  closeMenu();
 
   try {
     history.replaceState(null, "", "#" + view);
   } catch {
-    // Navigation works without History API.
+    // Hash navigation still works.
   }
 
   if (view === "overview") {
@@ -168,7 +216,9 @@ function navigate(view) {
 
   window.scrollTo({
     top: 0,
-    behavior: "smooth"
+    behavior: window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches ? "auto" : "smooth"
   });
 }
 
@@ -191,6 +241,26 @@ document.querySelectorAll("[data-view-link]").forEach((element) => {
   });
 });
 
+$("menu-btn").addEventListener("click", toggleMenu);
+
+if (backdrop) {
+  backdrop.addEventListener("click", closeMenu);
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeMenu();
+  }
+});
+
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 850) {
+    closeMenu();
+  }
+
+  requestAnimationFrame(drawChart);
+});
+
 $("overview-action").addEventListener("click", () => {
   navigate("forecast");
 });
@@ -199,26 +269,19 @@ $("side-upload").addEventListener("click", () => {
   navigate("forecast");
 });
 
-$("menu-btn").addEventListener("click", () => {
-  const isOpen = $("sidebar").classList.toggle("open");
-
-  $("menu-btn").setAttribute(
-    "aria-expanded",
-    String(isOpen)
-  );
-});
-
 $("date-chip").textContent = new Intl.DateTimeFormat("en-IN", {
   day: "2-digit",
   month: "short",
   year: "numeric"
 }).format(new Date());
 
-// ---------- Backend Health ----------
+// -------------------------
+// 4. API Health
+// -------------------------
 
 async function updateHealth() {
   try {
-    const result = await api("health");
+    const info = await api("health");
 
     $("sidebar-status").textContent = "API connected";
     $("header-status").textContent = "System online";
@@ -226,8 +289,8 @@ async function updateHealth() {
     $("sidebar-status-dot").classList.add("online");
     $("header-status-dot").classList.add("online");
 
-    if (!result.src_found) {
-      toast("Python src folder was not found.", true);
+    if (!info.src_found) {
+      toast("The Python src folder is missing.", true);
     }
   } catch {
     $("sidebar-status").textContent = "API offline";
@@ -236,15 +299,14 @@ async function updateHealth() {
     $("sidebar-status-dot").classList.remove("online");
     $("header-status-dot").classList.remove("online");
 
-    toast("FastAPI backend is not running.", true);
+    toast("Connect to your FastAPI backend.", true);
   }
 }
 
-// ============================================
-// CONSUMPTION CHART
-// ============================================
+// -------------------------
+// 5. Energy Chart
+// -------------------------
 
-// Demo data until user uploads real readings.
 let chartData = [
   0.45, 0.42, 0.38, 0.35, 0.33, 0.42,
   0.71, 1.10, 0.90, 0.79, 0.74, 0.82,
@@ -259,7 +321,9 @@ let chartLabels = chartData.map((_, index) =>
 function drawChart() {
   const canvas = $("consumption-chart");
 
-  if (!canvas || !canvas.offsetWidth) return;
+  if (!canvas || !canvas.offsetWidth) {
+    return;
+  }
 
   const bounds = canvas.getBoundingClientRect();
   const scale = window.devicePixelRatio || 1;
@@ -270,64 +334,68 @@ function drawChart() {
   canvas.width = Math.round(width * scale);
   canvas.height = Math.round(height * scale);
 
-  const ctx = canvas.getContext("2d");
-  ctx.scale(scale, scale);
+  const context = canvas.getContext("2d");
+
+  if (!context) return;
+
+  context.scale(scale, scale);
 
   const padding = {
-    left: 39,
-    right: 16,
+    left: 37,
+    right: 14,
     top: 18,
-    bottom: 27
+    bottom: 29
   };
 
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
-  const maximum = Math.max(
+  const maxY = Math.max(
     2,
     ...chartData.filter(Number.isFinite)
   ) * 1.12;
 
-  // Dark theme chart grid and axis labels.
-  ctx.font = "11px Inter, system-ui, sans-serif";
-  ctx.textAlign = "right";
+  context.font = "10px Inter, system-ui, sans-serif";
+  context.textAlign = "right";
 
+  // Gridlines and Y-axis values.
   for (let i = 0; i <= 4; i++) {
     const y = padding.top + chartHeight * i / 4;
 
-    ctx.strokeStyle = "#293b43";
-    ctx.lineWidth = 1;
+    context.strokeStyle = "#293b43";
+    context.lineWidth = 1;
 
-    ctx.beginPath();
-    ctx.moveTo(padding.left, y);
-    ctx.lineTo(width - padding.right, y);
-    ctx.stroke();
+    context.beginPath();
+    context.moveTo(padding.left, y);
+    context.lineTo(width - padding.right, y);
+    context.stroke();
 
-    ctx.fillStyle = "#a6b6c2";
+    context.fillStyle = "#a6b6c2";
 
-    ctx.fillText(
-      (maximum * (4 - i) / 4).toFixed(1),
-      padding.left - 9,
-      y + 4
+    context.fillText(
+      (maxY * (4 - i) / 4).toFixed(1),
+      padding.left - 8,
+      y + 3
     );
   }
 
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#a6b6c2";
+  // X-axis labels adapt to mobile width.
+  context.textAlign = "center";
+  context.fillStyle = "#a6b6c2";
 
+  const labelCount = width < 400 ? 4 : 6;
   const step = Math.max(
     1,
-    Math.ceil(chartData.length / 6)
+    Math.ceil(chartData.length / labelCount)
   );
 
   for (let i = 0; i < chartData.length; i += step) {
-    const x =
-      padding.left +
+    const x = padding.left +
       chartWidth * i / Math.max(1, chartData.length - 1);
 
     const label = chartLabels[i] || String(i);
 
-    ctx.fillText(
+    context.fillText(
       label + (label.length === 2 ? ":00" : ""),
       x,
       height - 6
@@ -335,39 +403,32 @@ function drawChart() {
   }
 
   const points = chartData.map((value, index) => ({
-    x:
-      padding.left +
+    x: padding.left +
       chartWidth * index / Math.max(1, chartData.length - 1),
-
-    y:
-      padding.top +
+    y: padding.top +
       chartHeight -
-      value / maximum * chartHeight
+      value / maxY * chartHeight
   }));
 
   if (!points.length) return;
 
-  // Area beneath the graph.
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
+  // Filled chart area.
+  context.beginPath();
+  context.moveTo(points[0].x, points[0].y);
 
   points.slice(1).forEach((point) => {
-    ctx.lineTo(point.x, point.y);
+    context.lineTo(point.x, point.y);
   });
 
-  ctx.lineTo(
+  context.lineTo(
     points[points.length - 1].x,
     padding.top + chartHeight
   );
 
-  ctx.lineTo(
-    points[0].x,
-    padding.top + chartHeight
-  );
+  context.lineTo(points[0].x, padding.top + chartHeight);
+  context.closePath();
 
-  ctx.closePath();
-
-  const gradient = ctx.createLinearGradient(
+  const gradient = context.createLinearGradient(
     0,
     padding.top,
     0,
@@ -377,42 +438,42 @@ function drawChart() {
   gradient.addColorStop(0, "rgba(73,217,172,0.21)");
   gradient.addColorStop(1, "rgba(73,217,172,0)");
 
-  ctx.fillStyle = gradient;
-  ctx.fill();
+  context.fillStyle = gradient;
+  context.fill();
 
-  // Energy consumption line.
-  ctx.beginPath();
+  // Electric green chart line.
+  context.beginPath();
 
   points.forEach((point, index) => {
     if (index === 0) {
-      ctx.moveTo(point.x, point.y);
+      context.moveTo(point.x, point.y);
     } else {
-      ctx.lineTo(point.x, point.y);
+      context.lineTo(point.x, point.y);
     }
   });
 
-  ctx.strokeStyle = "#49d9ac";
-  ctx.lineWidth = 2.7;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.stroke();
+  context.strokeStyle = "#49d9ac";
+  context.lineWidth = 2.7;
+  context.lineJoin = "round";
+  context.stroke();
 
-  // Last observation marker.
-  const last = points[points.length - 1];
+  const lastPoint = points[points.length - 1];
 
-  ctx.fillStyle = "#49d9ac";
-  ctx.beginPath();
-  ctx.arc(last.x, last.y, 4, 0, Math.PI * 2);
-  ctx.fill();
+  context.fillStyle = "#49d9ac";
+  context.beginPath();
+  context.arc(
+    lastPoint.x,
+    lastPoint.y,
+    4,
+    0,
+    Math.PI * 2
+  );
+  context.fill();
 }
 
-window.addEventListener("resize", () => {
-  requestAnimationFrame(drawChart);
-});
-
-// ============================================
-// APPLIANCE STUDIO
-// ============================================
+// -------------------------
+// 6. Appliance Studio
+// -------------------------
 
 const initialAppliances = [
   {
@@ -443,77 +504,45 @@ function addApplianceRow(
     quantity: 1
   }
 ) {
-  const tr = document.createElement("tr");
+  const tableRow = document.createElement("tr");
 
-  tr.innerHTML = `
+  tableRow.innerHTML = `
     <td>
-      <input
-        class="app-name"
-        placeholder="Appliance"
-        value="${safe(row.name)}"
-        required
-      >
+      <input class="app-name" placeholder="Appliance"
+             value="${safe(row.name)}" required>
     </td>
-
     <td>
-      <input
-        class="app-watts"
-        type="number"
-        min="0"
-        step="any"
-        value="${Number(row.watts)}"
-        required
-      >
+      <input class="app-watts" type="number"
+             min="0" step="any"
+             value="${Number(row.watts)}" required>
     </td>
-
     <td>
-      <input
-        class="app-hours"
-        type="number"
-        min="0"
-        max="24"
-        step="any"
-        value="${Number(row.hours)}"
-        required
-      >
+      <input class="app-hours" type="number"
+             min="0" max="24" step="any"
+             value="${Number(row.hours)}" required>
     </td>
-
     <td>
-      <input
-        class="app-qty"
-        type="number"
-        min="1"
-        max="100"
-        step="1"
-        value="${Number(row.quantity)}"
-        required
-      >
+      <input class="app-qty" type="number"
+             min="1" max="100" step="1"
+             value="${Number(row.quantity)}" required>
     </td>
-
     <td>
-      <button
-        class="delete-row"
-        type="button"
-        title="Remove appliance"
-      >
-        ×
-      </button>
+      <button class="delete-row" type="button"
+              aria-label="Remove appliance">×</button>
     </td>
   `;
 
-  tr.querySelector(".delete-row").addEventListener(
-    "click",
-    () => {
+  tableRow.querySelector(".delete-row")
+    .addEventListener("click", () => {
       if ($("appliance-rows").children.length <= 1) {
         toast("Keep at least one appliance.", true);
         return;
       }
 
-      tr.remove();
-    }
-  );
+      tableRow.remove();
+    });
 
-  $("appliance-rows").appendChild(tr);
+  $("appliance-rows").appendChild(tableRow);
 }
 
 initialAppliances.forEach(addApplianceRow);
@@ -534,195 +563,169 @@ function toAdviceList(raw) {
   }
 
   if (typeof raw === "object") {
-    if ("message" in raw) {
-      return [String(raw.message)];
-    }
+    if ("message" in raw) return [String(raw.message)];
 
     if ("recommendation" in raw) {
       return [String(raw.recommendation)];
     }
 
-    // Weather agent alert objects.
     if ("Title" in raw && "Action" in raw) {
       return [
         `${raw.Title}: ${raw.Reason || ""} ${raw.Action}`
       ];
     }
 
-    return Object.entries(raw)
-      .map(([key, value]) => {
-        const text = typeof value === "object"
-          ? JSON.stringify(value)
-          : value;
+    return Object.entries(raw).map(([key, value]) => {
+      const content = typeof value === "object"
+        ? JSON.stringify(value)
+        : value;
 
-        return `${key}: ${text}`;
-      })
-      .slice(0, 12);
+      return `${key}: ${content}`;
+    }).slice(0, 12);
   }
 
   return [];
 }
 
 function renderAdvice(target, values, emptyText) {
-  const items = toAdviceList(values);
+  const list = toAdviceList(values);
 
   target.innerHTML = (
-    items.length ? items : [emptyText]
-  ).map((item) => `
-    <div class="insight">
-      ${safe(item)}
-    </div>
+    list.length ? list : [emptyText]
+  ).map((value) => `
+    <div class="insight">${safe(value)}</div>
   `).join("");
 }
 
-$("appliance-form").addEventListener(
-  "submit",
-  (event) => {
-    event.preventDefault();
+$("appliance-form").addEventListener("submit", (event) => {
+  event.preventDefault();
 
-    withLoading($("manual-submit"), async () => {
-      const appliances = [
-        ...$("appliance-rows").querySelectorAll("tr")
-      ].map((tr) => ({
-        name: tr.querySelector(".app-name").value.trim(),
-        watts: Number(tr.querySelector(".app-watts").value),
-        hours: Number(tr.querySelector(".app-hours").value),
-        quantity: Number(tr.querySelector(".app-qty").value)
-      }));
+  withLoading($("manual-submit"), async () => {
+    const appliances = [
+      ...$("appliance-rows").querySelectorAll("tr")
+    ].map((row) => ({
+      name: row.querySelector(".app-name").value.trim(),
+      watts: Number(row.querySelector(".app-watts").value),
+      hours: Number(row.querySelector(".app-hours").value),
+      quantity: Number(row.querySelector(".app-qty").value)
+    }));
 
-      const tariff = Number($("manual-tariff").value);
+    const tariff = Number($("manual-tariff").value);
 
-      const output = await api("manual", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          appliances,
-          tariff,
-          target_savings: Number($("manual-target").value)
-        })
-      });
+    const output = await api("manual", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        appliances,
+        tariff,
+        target_savings: Number($("manual-target").value)
+      })
+    });
 
-      const result = output.result || {};
+    const result = output.result || {};
 
-      const daily = numeric(
-        first(result, [
-          "total_daily_energy_kwh",
-          "daily_energy_kwh"
-        ])
-      );
+    const daily = numeric(first(result, [
+      "total_daily_energy_kwh",
+      "daily_energy_kwh"
+    ]));
 
-      const cost = numeric(
-        first(result, [
-          "total_monthly_cost",
-          "monthly_cost"
-        ])
-      );
+    const cost = numeric(first(result, [
+      "total_monthly_cost",
+      "monthly_cost"
+    ]));
 
-      const savings = numeric(
-        first(result, [
-          "projected_savings",
-          "potential_monthly_savings"
-        ])
-      );
+    const savings = numeric(first(result, [
+      "projected_savings",
+      "potential_monthly_savings"
+    ]));
 
-      $("manual-placeholder").classList.add("hidden");
-      $("manual-result").classList.remove("hidden");
+    $("manual-placeholder").classList.add("hidden");
+    $("manual-result").classList.remove("hidden");
 
-      $("appliance-daily").textContent =
-        daily === null ? "—" : number(daily) + " kWh";
+    $("appliance-daily").textContent =
+      daily === null ? "—" : number(daily) + " kWh";
 
-      $("appliance-bill").textContent =
-        cost === null ? "—" : money(cost);
+    $("appliance-bill").textContent =
+      cost === null ? "—" : money(cost);
 
-      $("appliance-savings").textContent =
-        savings === null ? "—" : money(savings);
+    $("appliance-savings").textContent =
+      savings === null ? "—" : money(savings);
 
-      const summary = appliances.map((item) => ({
-        name: item.name,
-        energy:
-          item.watts * item.hours * item.quantity / 1000
-      }));
+    const breakdown = appliances.map((item) => ({
+      name: item.name,
+      energy: item.watts * item.hours * item.quantity / 1000
+    }));
 
-      const maximum = Math.max(
-        0.001,
-        ...summary.map((item) => item.energy)
-      );
+    const maximum = Math.max(
+      0.001,
+      ...breakdown.map((item) => item.energy)
+    );
 
-      $("appliance-bars").innerHTML = summary
-        .sort((a, b) => b.energy - a.energy)
-        .map((item) => `
-          <div class="breakdown-row">
-            <div class="breakdown-row-head">
-              <span>${safe(item.name)}</span>
-              <strong>${number(item.energy)} kWh/day</strong>
-            </div>
-            <div class="bar-track">
-              <div
-                class="bar-fill"
-                style="width:${(
-                  item.energy / maximum * 100
-                ).toFixed(1)}%"
-              ></div>
+    $("appliance-bars").innerHTML = breakdown
+      .sort((a, b) => b.energy - a.energy)
+      .map((item) => `
+        <div class="breakdown-row">
+          <div class="breakdown-row-head">
+            <span>${safe(item.name)}</span>
+            <strong>${number(item.energy)} kWh/day</strong>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill"
+                 style="width:${(item.energy / maximum * 100).toFixed(1)}%">
             </div>
           </div>
-        `)
-        .join("");
+        </div>
+      `).join("");
 
-      renderAdvice(
-        $("appliance-recs"),
-        first(result, [
-          "recommendations",
-          "action_plan",
-          "analysis"
-        ]),
-        "Analysis completed. Check the appliance breakdown."
-      );
+    renderAdvice(
+      $("appliance-recs"),
+      first(result, [
+        "recommendations",
+        "action_plan",
+        "analysis"
+      ]),
+      "Appliance analysis completed."
+    );
 
-      if (daily !== null) {
-        $("metric-energy").textContent = number(daily);
-        $("metric-cost").textContent = number(daily * tariff);
+    if (daily !== null) {
+      $("metric-energy").textContent = number(daily);
+      $("metric-cost").textContent = number(daily * tariff);
 
-        $("metric-analysis").textContent = "Analyzed";
+      $("metric-analysis").textContent = "Analyzed";
+      $("metric-analysis-foot").textContent =
+        appliances.length + " appliance types";
 
-        $("metric-analysis-foot").textContent =
-          appliances.length + " appliance types";
+      $("overview-source").textContent =
+        "Calculated from your appliance inputs";
 
-        $("overview-source").textContent =
-          "Derived from entered appliance information";
+      $("overview-badge").textContent = "YOUR INPUT";
 
-        $("overview-badge").textContent = "YOUR INPUT";
+      const energyCard = $("metric-energy")
+        .closest(".metric-card");
 
-        const energyFoot = $("metric-energy")
-          .parentElement
-          .parentElement
-          .querySelector(".metric-foot");
+      const costCard = $("metric-cost")
+        .closest(".metric-card");
 
-        const costFoot = $("metric-cost")
-          .parentElement
-          .parentElement
-          .querySelector(".metric-foot");
-
-        if (energyFoot) {
-          energyFoot.textContent =
-            "Estimated from entered appliances";
-        }
-
-        if (costFoot) {
-          costFoot.textContent =
-            `At ₹${number(tariff)} per kWh`;
-        }
+      if (energyCard) {
+        energyCard.querySelector(".metric-foot").textContent =
+          "Estimated from entered appliances";
       }
 
-      toast("Appliance analysis completed.");
-    });
-  }
-);
+      if (costCard) {
+        costCard.querySelector(".metric-foot").textContent =
+          `At ₹${number(tariff)} per kWh`;
+      }
+    }
 
-// ============================================
-// CSV UPLOAD HELPERS
-// ============================================
+    toast("Appliance analysis completed.");
+  });
+});
+
+// -------------------------
+// 7. CSV Helpers
+// -------------------------
 
 function setupUpload(inputId, labelId) {
   const input = $(inputId);
@@ -738,13 +741,10 @@ function setupUpload(inputId, labelId) {
 
 setupUpload("forecast-file", "forecast-filename");
 setupUpload("anomaly-file", "anomaly-filename");
+setupUpload("patterns-file", "patterns-filename");
 
 function collectNumbers(object, prefix = "", depth = 0) {
-  if (
-    depth > 3 ||
-    !object ||
-    typeof object !== "object"
-  ) {
+  if (!object || typeof object !== "object" || depth > 3) {
     return [];
   }
 
@@ -773,9 +773,9 @@ function collectNumbers(object, prefix = "", depth = 0) {
   });
 }
 
-// ============================================
-// ML ENERGY FORECAST
-// ============================================
+// -------------------------
+// 8. ML Forecast
+// -------------------------
 
 $("forecast-form").addEventListener("submit", (event) => {
   event.preventDefault();
@@ -811,40 +811,35 @@ $("forecast-form").addEventListener("submit", (event) => {
         /energy|kwh|consumption/i.test(item.key)
     );
 
-    const selected =
-      candidates[0] ||
-      collectNumbers(result).find(
-        (item) => /predict|forecast/i.test(item.key)
+    const selected = candidates[0] ||
+      collectNumbers(result).find((item) =>
+        /predict|forecast/i.test(item.key)
       );
 
     $("forecast-primary").textContent = selected
       ? number(selected.value, 3) +
-        (
-          /kwh|energy|consumption/i.test(selected.key)
-            ? " kWh"
-            : ""
-        )
+        (/kwh|energy|consumption/i.test(selected.key)
+          ? " kWh" : "")
       : "Prediction completed";
 
     $("forecast-primary-label").textContent = selected
       ? selected.key.replace(/_/g, " ")
-      : "Review model response below";
+      : "Review model response";
 
     $("forecast-json").textContent =
       JSON.stringify(result, null, 2);
 
     $("metric-analysis").textContent = "Forecasted";
-
     $("metric-analysis-foot").textContent =
-      "ML forecast response received";
+      "ML prediction completed";
 
     toast("ML forecast completed.");
   });
 });
 
-// ============================================
-// STATISTICAL ANOMALY DETECTION
-// ============================================
+// -------------------------
+// 9. Anomaly Center
+// -------------------------
 
 $("anomaly-form").addEventListener("submit", (event) => {
   event.preventDefault();
@@ -853,7 +848,7 @@ $("anomaly-form").addEventListener("submit", (event) => {
     const file = $("anomaly-file").files[0];
 
     if (!file) {
-      throw new Error("Choose an hourly energy CSV.");
+      throw new Error("Choose an energy CSV.");
     }
 
     const form = new FormData();
@@ -890,13 +885,11 @@ $("anomaly-form").addEventListener("submit", (event) => {
 
     $("anomaly-table").innerHTML = anomalies.length
       ? anomalies.map((item) => {
-          const isHigh = String(
-            item.Anomaly_Type
-          ).includes("High");
+          const classification = String(
+            item.Anomaly_Type || ""
+          );
 
-          const classification = isHigh
-            ? "status-high"
-            : "status-low";
+          const isHigh = classification.includes("High");
 
           const expected = item.Expected_Energy_kWh == null
             ? "—"
@@ -906,25 +899,21 @@ $("anomaly-form").addEventListener("submit", (event) => {
             <tr>
               <td>${number(item.Energy_kWh)} kWh</td>
               <td>${expected}</td>
-              <td class="${classification}">
-                ${safe(item.Anomaly_Type)}
+              <td class="${isHigh ? "status-high" : "status-low"}">
+                ${safe(classification)}
               </td>
             </tr>
           `;
         }).join("")
       : `
-          <tr>
-            <td colspan="3">
-              No anomalies were flagged in the uploaded readings.
-            </td>
-          </tr>
-        `;
+        <tr>
+          <td colspan="3">No anomalies were flagged.</td>
+        </tr>
+      `;
 
     $("anomaly-info").textContent =
-      "Showing the latest 15 anomalies. " +
-      "Statistical flags do not confirm equipment faults.";
+      "Statistical flags are not confirmed faults.";
 
-    // Update overview chart using actual uploaded readings.
     const readings = (result.recent_readings || [])
       .filter((item) =>
         Number.isFinite(Number(item.Energy_kWh))
@@ -932,34 +921,32 @@ $("anomaly-form").addEventListener("submit", (event) => {
       .slice(-24);
 
     if (readings.length > 1) {
-      chartData = readings.map((item) =>
-        Number(item.Energy_kWh)
+      chartData = readings.map(
+        (item) => Number(item.Energy_kWh)
       );
 
-      chartLabels = readings.map((_, index) =>
-        String(index + 1)
+      chartLabels = readings.map(
+        (_, index) => String(index + 1)
       );
 
       $("overview-chart-sub").textContent =
-        "Latest readings from your uploaded CSV";
+        "Latest readings from uploaded CSV";
 
       $("overview-source").textContent =
-        "Anomaly analysis completed using uploaded readings";
+        "Anomaly scan completed using uploaded readings";
 
       $("overview-badge").textContent = "YOUR DATA";
     }
 
     toast(
-      "Anomaly scan completed: " +
-      result.anomaly_count +
-      " flagged readings."
+      `Anomaly scan complete: ${result.anomaly_count} flags.`
     );
   });
 });
 
-// ============================================
-// WEATHER ADVISOR
-// ============================================
+// -------------------------
+// 10. Weather Advisor
+// -------------------------
 
 function weatherInsights(result) {
   const values = [
@@ -969,24 +956,8 @@ function weatherInsights(result) {
       "advice",
       "energy_advice",
       "suggestions"
-    ], null)
+    ], [])
   ];
-
-  const knownKeys = [
-    "alerts",
-    "recommendations",
-    "advice",
-    "suggestions"
-  ];
-
-  for (const [key, value] of Object.entries(result)) {
-    if (
-      /alert|recommend|suggest|advice|tip/i.test(key) &&
-      !knownKeys.includes(key)
-    ) {
-      values.push(value);
-    }
-  }
 
   return values.flatMap(toAdviceList);
 }
@@ -996,8 +967,10 @@ $("weather-form").addEventListener("submit", (event) => {
 
   withLoading($("weather-submit"), async () => {
     const appliances = [
-      ...document.querySelectorAll(".check-cards input:checked")
-    ].map((input) => input.value);
+      ...document.querySelectorAll(
+        ".check-cards input:checked"
+      )
+    ].map((item) => item.value);
 
     const payload = {
       city: $("weather-city").value.trim(),
@@ -1006,7 +979,7 @@ $("weather-form").addEventListener("submit", (event) => {
     };
 
     if (!payload.city) {
-      throw new Error("Please enter a city.");
+      throw new Error("Please enter a city name.");
     }
 
     const output = await api("weather", {
@@ -1022,17 +995,9 @@ $("weather-form").addEventListener("submit", (event) => {
     $("weather-placeholder").classList.add("hidden");
     $("weather-result").classList.remove("hidden");
 
-    const city = first(
-      result,
-      ["city", "location", "name"],
-      payload.city
-    );
-
-    const country = first(result, ["country"], "");
-
     $("weather-location").textContent = [
-      city,
-      country
+      first(result, ["city", "location", "name"], payload.city),
+      first(result, ["country"], "")
     ].filter(Boolean).join(", ");
 
     const temperature = numeric(
@@ -1050,28 +1015,25 @@ $("weather-form").addEventListener("submit", (event) => {
         ? "Weather data"
         : number(temperature, 1) + "°C";
 
-    const daytime = first(
-      result,
-      ["is_day", "is_daytime", "daytime"],
-      null
-    );
+    const daytime = first(result, [
+      "is_day",
+      "is_daytime",
+      "daytime"
+    ], null);
 
     $("weather-condition").textContent =
       daytime === null
         ? "Current conditions"
-        : daytime
-          ? "Daytime"
-          : "Nighttime";
+        : daytime ? "Daytime" : "Nighttime";
 
-    const weatherIcon = document.querySelector(
+    const icon = document.querySelector(
       ".weather-big-icon"
     );
 
-    if (weatherIcon) {
-      weatherIcon.textContent =
+    if (icon) {
+      icon.textContent =
         daytime === false || daytime === 0
-          ? "☾"
-          : "☀";
+          ? "☾" : "☀";
     }
 
     const extras = [
@@ -1087,10 +1049,8 @@ $("weather-form").addEventListener("submit", (event) => {
       ["Sunrise", result.sunrise],
       ["Sunset", result.sunset],
       ["Local time", result.local_time]
-    ].filter(
-      ([, value]) =>
-        value !== null &&
-        value !== undefined
+    ].filter(([, value]) =>
+      value !== null && value !== undefined
     );
 
     $("weather-extra").innerHTML = extras.map(
@@ -1105,7 +1065,7 @@ $("weather-form").addEventListener("submit", (event) => {
     renderAdvice(
       $("weather-alerts"),
       weatherInsights(result),
-      "No appliance-specific advice was generated."
+      "No appliance-specific advice available."
     );
 
     $("weather-json").textContent =
@@ -1115,9 +1075,9 @@ $("weather-form").addEventListener("submit", (event) => {
   });
 });
 
-// ============================================
-// WHAT-IF SIMULATOR
-// ============================================
+// -------------------------
+// 11. What-If Simulator
+// -------------------------
 
 function updateSimulator() {
   const watts = Math.max(
@@ -1154,18 +1114,19 @@ function updateSimulator() {
   const before =
     watts * hours * quantity / 1000 * 30 * tariff;
 
-  const savingsKwh =
+  const savedEnergy =
     watts * reduction * quantity / 1000 * 30;
 
   const after = Math.max(
     0,
-    before - savingsKwh * tariff
+    before - savedEnergy * tariff
   );
 
-  $("sim-savings").textContent = money(before - after);
+  $("sim-savings").textContent =
+    money(before - after);
 
   $("sim-energy").textContent =
-    number(savingsKwh) + " kWh saved per month";
+    number(savedEnergy) + " kWh saved per month";
 
   $("sim-before").textContent = money(before);
   $("sim-after").textContent = money(after);
@@ -1190,13 +1151,9 @@ function updateSimulator() {
 
 updateSimulator();
 
-// ============================================
-// ENERGY COPILOT
-// ============================================
-
-// API calculations are triggered on every submit.
-// After first successful analysis, changing inputs
-// automatically requests a fresh result.
+// -------------------------
+// 12. Energy Copilot
+// -------------------------
 
 let copilotHasRun = false;
 let copilotRevision = 0;
@@ -1217,14 +1174,12 @@ function getCopilotPayload() {
 
     tariff: Number($("agent-tariff").value),
 
-    appliances: [
-      {
-        name: $("agent-name").value.trim(),
-        watts: Number($("agent-watts").value),
-        hours: Number($("agent-hours").value),
-        quantity: Number($("agent-qty").value)
-      }
-    ]
+    appliances: [{
+      name: $("agent-name").value.trim(),
+      watts: Number($("agent-watts").value),
+      hours: Number($("agent-hours").value),
+      quantity: Number($("agent-qty").value)
+    }]
   };
 }
 
@@ -1233,7 +1188,7 @@ function validateCopilot(payload) {
 
   if (payload.question.length < 3) {
     throw new Error(
-      "Question must contain at least 3 characters."
+      "Enter a question with at least 3 characters."
     );
   }
 
@@ -1245,7 +1200,7 @@ function validateCopilot(payload) {
     !Number.isFinite(appliance.watts) ||
     appliance.watts < 0
   ) {
-    throw new Error("Power must be zero or greater.");
+    throw new Error("Power cannot be negative.");
   }
 
   if (
@@ -1268,7 +1223,7 @@ function validateCopilot(payload) {
     !Number.isFinite(payload.tariff) ||
     payload.tariff < 0
   ) {
-    throw new Error("Tariff must be zero or greater.");
+    throw new Error("Tariff must be 0 or greater.");
   }
 }
 
@@ -1278,7 +1233,6 @@ async function updateCopilot(showToast = false) {
   clearTimeout(copilotTimer);
 
   const payload = getCopilotPayload();
-
   validateCopilot(payload);
 
   const button = $("agent-submit");
@@ -1295,28 +1249,26 @@ async function updateCopilot(showToast = false) {
       body: JSON.stringify(payload)
     });
 
-    // Prevent an old request from replacing new results.
-    if (revision !== copilotRevision) return;
+    if (revision !== copilotRevision) {
+      return;
+    }
 
     const result = output.result || {};
 
     $("agent-placeholder").classList.add("hidden");
     $("agent-result").classList.remove("hidden");
 
-    // Assistant message.
     $("agent-answer").textContent =
-      result.answer || "No response returned.";
+      result.answer || "No response generated.";
 
-    // Optional question bubble in updated Bento HTML.
-    const questionPreview = document.querySelector(
+    const preview = document.querySelector(
       ".agent-question-preview"
     );
 
-    if (questionPreview) {
-      questionPreview.textContent = payload.question;
+    if (preview) {
+      preview.textContent = payload.question;
     }
 
-    // Tools used by the decision engine.
     $("agent-tools").innerHTML = (
       result.tools_used || []
     ).map((tool) => `
@@ -1324,31 +1276,24 @@ async function updateCopilot(showToast = false) {
         ${safe(String(tool).replaceAll("_", " "))}
       </span>
     `).join("") || `
-      <span class="muted">
-        No tools needed
-      </span>
+      <span class="muted">No tools needed</span>
     `;
 
-    // Recommended actions and potential savings.
     $("agent-actions").innerHTML = (
       result.actions || []
     ).map((action) => `
       <div class="agent-action">
-        <strong>
-          ${safe(action.appliance)}
-        </strong>
-
+        <strong>${safe(action.appliance)}</strong>
         <span>
-          Reduce
-          ${number(action.reduction_hours_per_day, 1)}
-          h/day -
+          Reduce ${number(action.reduction_hours_per_day, 1)}
+          h/day →
           ${money(action.monthly_inr_saved)}/month
           (estimate)
         </span>
       </div>
     `).join("") || `
       <p class="muted small">
-        Ask for saving suggestions to generate scenarios.
+        Ask for savings suggestions to create scenarios.
       </p>
     `;
 
@@ -1357,34 +1302,21 @@ async function updateCopilot(showToast = false) {
 
     copilotHasRun = true;
 
-    // Make the assistant output visible on longer panels.
-    const answer = $("agent-answer");
-
-    answer.scrollIntoView({
-      behavior: window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches ? "auto" : "smooth",
-      block: "nearest"
-    });
-
     if (showToast) {
       toast("Energy Copilot analysis completed.");
     }
-
   } catch (error) {
     if (revision === copilotRevision) {
       throw error;
     }
-
   } finally {
     if (revision === copilotRevision) {
       button.disabled = false;
-      button.textContent = "Run decision agent";
+      button.textContent = "Run Decision Agent ↗";
     }
   }
 }
 
-// Button submission.
 $("copilot-form").addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -1394,22 +1326,22 @@ $("copilot-form").addEventListener("submit", (event) => {
   });
 });
 
-// Recalculate automatically after a previously successful run.
+// After first successful run, update when values change.
 copilotFields.forEach((id) => {
   $(id).addEventListener("input", () => {
     ++copilotRevision;
     clearTimeout(copilotTimer);
 
-    if (!copilotHasRun) return;
+    if (!copilotHasRun) {
+      return;
+    }
 
-    // Hide outdated answer during recalculation.
     $("agent-result").classList.add("hidden");
     $("agent-placeholder").classList.remove("hidden");
 
     $("agent-submit").disabled = false;
-    $("agent-submit").textContent = "Run decision agent";
+    $("agent-submit").textContent = "Run Decision Agent ↗";
 
-    // Debounce avoids excessive API requests.
     copilotTimer = setTimeout(() => {
       updateCopilot().catch((error) => {
         console.error(error);
@@ -1419,16 +1351,9 @@ copilotFields.forEach((id) => {
   });
 });
 
-// ============================================
-// ML PATTERN LAB
-// ============================================
-
-$("patterns-file").addEventListener("change", () => {
-  const file = $("patterns-file").files[0];
-
-  $("patterns-filename").textContent =
-    file ? file.name : "No file selected";
-});
+// -------------------------
+// 13. ML Pattern Lab
+// -------------------------
 
 $("patterns-form").addEventListener("submit", (event) => {
   event.preventDefault();
@@ -1437,7 +1362,7 @@ $("patterns-form").addEventListener("submit", (event) => {
     const file = $("patterns-file").files[0];
 
     if (!file) {
-      throw new Error("Select a CSV file first.");
+      throw new Error("Select an energy CSV file.");
     }
 
     const contamination =
@@ -1472,28 +1397,21 @@ $("patterns-form").addEventListener("submit", (event) => {
     $("patterns-features").innerHTML = (
       result.features_used || []
     ).map((feature) => `
-      <span class="agent-pill">
-        ${safe(feature)}
-      </span>
+      <span class="agent-pill">${safe(feature)}</span>
     `).join("");
 
     $("patterns-list").innerHTML = (
       result.highest_outlier_examples || []
     ).map((item, index) => `
       <div class="agent-action">
-        <strong>
-          Outlier ${index + 1}
-        </strong>
-
+        <strong>Outlier ${index + 1}</strong>
         <span>
-          ${number(item.Energy_kWh, 3)} kWh -
+          ${number(item.Energy_kWh, 3)} kWh ·
           Score ${number(item.anomaly_score, 4)}
         </span>
       </div>
     `).join("") || `
-      <p class="muted small">
-        No outlier examples to display.
-      </p>
+      <p class="muted small">No outlier examples.</p>
     `;
 
     $("patterns-notes").textContent =
@@ -1503,20 +1421,20 @@ $("patterns-form").addEventListener("submit", (event) => {
   });
 });
 
-// ============================================
-// SUBTLE 3D CARD INTERACTION
-// ============================================
+// -------------------------
+// 14. Gentle 3D Card Effect
+// -------------------------
 
 function initializeCardAnimations() {
-  const reducedMotion = window.matchMedia(
+  const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   );
 
-  const finePointer = window.matchMedia(
+  const desktopPointer = window.matchMedia(
     "(hover: hover) and (pointer: fine)"
   );
 
-  if (reducedMotion.matches || !finePointer.matches) {
+  if (reduceMotion.matches || !desktopPointer.matches) {
     return;
   }
 
@@ -1524,11 +1442,13 @@ function initializeCardAnimations() {
     card.addEventListener("pointermove", (event) => {
       const bounds = card.getBoundingClientRect();
 
-      const x =
-        (event.clientX - bounds.left) / bounds.width - 0.5;
+      const x = (
+        (event.clientX - bounds.left) / bounds.width
+      ) - 0.5;
 
-      const y =
-        (event.clientY - bounds.top) / bounds.height - 0.5;
+      const y = (
+        (event.clientY - bounds.top) / bounds.height
+      ) - 0.5;
 
       card.style.transform = `
         perspective(850px)
@@ -1546,9 +1466,9 @@ function initializeCardAnimations() {
 
 initializeCardAnimations();
 
-// ============================================
-// INITIALIZE APPLICATION
-// ============================================
+// -------------------------
+// 15. Application Startup
+// -------------------------
 
 const initialView = location.hash.substring(1);
 
@@ -1559,4 +1479,5 @@ navigate(
 );
 
 requestAnimationFrame(drawChart);
+
 updateHealth();

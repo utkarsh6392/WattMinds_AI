@@ -1,2127 +1,1037 @@
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WattMinds">
+  <meta name="application-name" content="WattMinds">
+  <meta name="description"
+        content="WattMinds Energy Intelligence, ML Forecasting and Optimization">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+  <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%230b0f19'/%3E%3Cpath d='M72 10 28 72h31l-7 46 48-67H68z' fill='%2349d9ac'/%3E%3C/svg%3E">
 
-    <meta name="theme-color" content="#0b0f19">
-
-    <meta
-        name="description"
-        content="WattMinds is an intelligent energy analytics and decision-support platform with ML forecasting, anomaly detection, and energy optimization."
-    >
-
-    <title>WattMinds | Energy Intelligence Dashboard</title>
-
-    <!-- Main stylesheet -->
-    <link rel="stylesheet" href="/styles.css?v=bento2">
-
-    <!-- Application JavaScript -->
-    <script defer src="/app.js?v=bento2"></script>
+  <title>WattMinds | Energy Intelligence</title>
+  <link rel="stylesheet" href="/styles.css?v=mobile-final">
+  <script src="/app.js?v=mobile-final" defer></script>
 </head>
 
 <body>
-
-    <div class="app-shell">
-
-        <!-- ========================================
-             SIDEBAR NAVIGATION
-        ======================================== -->
-
-        <aside class="sidebar" id="sidebar">
-
-            <a
-                href="#overview"
-                class="brand"
-                data-view-link="overview"
-                aria-label="WattMinds Overview"
-            >
-
-                <span class="brand-icon">ϟ</span>
-
-                <span class="brand-text">
-                    <b>Watt<span>Minds</span></b>
-                    <small>ENERGY INTELLIGENCE</small>
-                </span>
-
-            </a>
-
-            <!-- Workspace -->
-
-            <div class="workspace">
-
-                <div class="workspace-avatar">
-                    W
-                </div>
-
-                <div>
-                    <strong>Energy Workspace</strong>
-                    <small>Intelligent monitoring</small>
-                </div>
-
-                <span class="workspace-chevron">⌄</span>
-
-            </div>
-
-            <!-- Navigation -->
-
-            <p class="nav-eyebrow">WORKSPACE</p>
-
-            <nav class="main-nav" aria-label="Main navigation">
-
-                <button
-                    type="button"
-                    class="nav-item active"
-                    data-view="overview"
-                >
-                    <span class="nav-icon">◫</span>
-                    Overview
-                    <span class="nav-trailing">⌘1</span>
-                </button>
-
-                <button
-                    type="button"
-                    class="nav-item"
-                    data-view="appliances"
-                >
-                    <span class="nav-icon">▦</span>
-                    Appliance Studio
-                </button>
-
-                <button
-                    type="button"
-                    class="nav-item"
-                    data-view="forecast"
-                >
-                    <span class="nav-icon">⌁</span>
-                    ML Forecast
-                </button>
-
-                <button
-                    type="button"
-                    class="nav-item"
-                    data-view="anomalies"
-                >
-                    <span class="nav-icon">◇</span>
-                    Anomaly Center
-                </button>
-
-                <button
-                    type="button"
-                    class="nav-item"
-                    data-view="weather"
-                >
-                    <span class="nav-icon">☀</span>
-                    Weather Advisor
-                </button>
-
-                <button
-                    type="button"
-                    class="nav-item"
-                    data-view="copilot"
-                >
-                    <span class="nav-icon">✳</span>
-                    Energy Copilot
-                </button>
-
-                <button
-                    type="button"
-                    class="nav-item"
-                    data-view="patterns"
-                >
-                    <span class="nav-icon">⬡</span>
-                    ML Pattern Lab
-                </button>
-
-                <button
-                    type="button"
-                    class="nav-item"
-                    data-view="simulator"
-                >
-                    <span class="nav-icon">◈</span>
-                    What-If Simulator
-                </button>
-
-            </nav>
-
-            <!-- System Status -->
-
-            <p class="nav-eyebrow second">
-                SYSTEM
-            </p>
-
-            <div class="system-mini">
-
-                <span
-                    class="live-dot"
-                    id="sidebar-status-dot"
-                ></span>
-
-                <div>
-                    <strong id="sidebar-status">
-                        Checking API...
-                    </strong>
-
-                    <small>FastAPI connection</small>
-                </div>
-
-            </div>
-
-            <!-- Sidebar Action -->
-
-            <div class="sidebar-bottom">
-
-                <strong>Analyze your energy data</strong>
-
-                <p>
-                    Upload electricity readings to explore
-                    predictions and unusual usage patterns.
-                </p>
-
-                <button
-                    type="button"
-                    id="side-upload"
-                    class="outline-light"
-                >
-                    Analyze a CSV
-                    <span>↗</span>
-                </button>
-
-            </div>
-
-        </aside>
-
-        <!-- ========================================
-             MAIN APPLICATION
-        ======================================== -->
-
-        <div class="main-column">
-
-            <!-- HEADER -->
-
-            <header class="topbar">
-
-                <div class="top-left">
-
-                    <button
-                        type="button"
-                        id="menu-btn"
-                        class="icon-button menu-btn"
-                        aria-label="Toggle navigation menu"
-                        aria-expanded="false"
-                        aria-controls="sidebar"
-                    >
-                        ☰
-                    </button>
-
-                    <span class="breadcrumb">
-                        Workspace
-                    </span>
-
-                    <span class="crumb-slash">
-                        /
-                    </span>
-
-                    <span id="breadcrumb-current">
-                        Overview
-                    </span>
-
-                </div>
-
-                <div class="top-actions">
-
-                    <span class="current-chip">
-
-                        <span
-                            class="live-dot"
-                            id="header-status-dot"
-                        ></span>
-
-                        <span id="header-status">
-                            Connecting
-                        </span>
-
-                    </span>
-
-                    <button
-                        id="date-chip"
-                        class="date-chip"
-                        type="button"
-                    ></button>
-
-                    <span class="avatar" title="Workspace">
-                        W
-                    </span>
-
-                </div>
-
-            </header>
-
-            <!-- ====================================
-                 PAGE CONTENT
-            ==================================== -->
-
-            <main class="page-container">
-
-                <!-- ================================
-                     VIEW 1: OVERVIEW
-                ================================ -->
-
-                <section
-                    class="view active"
-                    id="view-overview"
-                    aria-label="Energy overview"
-                >
-
-                    <div class="page-heading">
-
-                        <div>
-
-                            <div class="eyebrow">
-                                <span class="eyebrow-line"></span>
-                                ENERGY CONTROL CENTER
-                            </div>
-
-                            <h1>Energy at a glance</h1>
-
-                            <p class="subtext">
-                                Understand your electricity usage,
-                                identify unusual patterns, and make
-                                informed energy decisions.
-                            </p>
-
-                        </div>
-
-                        <button
-                            type="button"
-                            id="overview-action"
-                            class="btn primary"
-                        >
-                            Analyze Energy Data
-                            <span>↗</span>
-                        </button>
-
-                    </div>
-
-                    <!-- Energy Hero -->
-
-                    <article class="hero-card">
-
-                        <div class="hero-content">
-
-                            <span class="hero-pill">
-                                ENERGY INTELLIGENCE PLATFORM
-                            </span>
-
-                            <h2>
-                                Understand your energy.
-                                <br>
-                                <em>Optimize your future.</em>
-                            </h2>
-
-                            <p>
-                                Combine historical consumption,
-                                machine learning predictions,
-                                appliance analysis, and contextual
-                                recommendations in one workspace.
-                            </p>
-
-                            <button
-                                type="button"
-                                class="btn hero-btn"
-                                data-go="forecast"
-                            >
-                                Explore ML Forecast
-                                <span>↗</span>
-                            </button>
-
-                        </div>
-
-                        <!-- Decorative animated power reactor -->
-
-                        <div
-                            class="hero-visual"
-                            aria-hidden="true"
-                        >
-
-                            <div class="power-grid"></div>
-
-                            <div class="flow-line flow-line-1"></div>
-                            <div class="flow-line flow-line-2"></div>
-                            <div class="flow-line flow-line-3"></div>
-
-                            <div class="reactor-assembly">
-
-                                <div class="reactor-shadow"></div>
-                                <div class="reactor-halo"></div>
-
-                                <div class="reactor-disk">
-
-                                    <div class="reactor-blades"></div>
-
-                                    <div class="reactor-center">
-                                        <span class="reactor-bolt">
-                                            ϟ
-                                        </span>
-                                    </div>
-
-                                </div>
-
-                                <div class="reactor-ring ring-one"></div>
-                                <div class="reactor-ring ring-two"></div>
-
-                                <div class="spark-point spark-1"></div>
-                                <div class="spark-point spark-2"></div>
-                                <div class="spark-point spark-3"></div>
-
-                            </div>
-
-                            <div class="glow one"></div>
-                            <div class="glow two"></div>
-
-                            <div class="energy-ring">
-                                <span>ϟ</span>
-                            </div>
-
-                            <div class="floating-stat fs-one">
-                                Predict demand
-                            </div>
-
-                            <div class="floating-stat fs-two">
-                                Detect anomalies
-                            </div>
-
-                            <div class="orbit orbit-a"></div>
-                            <div class="orbit orbit-b"></div>
-
-                        </div>
-
-                    </article>
-
-                    <!-- Metrics Heading -->
-
-                    <div class="section-title-row">
-
-                        <div>
-
-                            <h3>Energy Overview</h3>
-
-                            <p
-                                id="overview-source"
-                                class="muted small"
-                            >
-                                Illustrative values.
-                                Connect your data for actual results.
-                            </p>
-
-                        </div>
-
-                        <span
-                            class="demo-chip"
-                            id="overview-badge"
-                        >
-                            SAMPLE DATA
-                        </span>
-
-                    </div>
-
-                    <!-- Metric Tiles -->
-
-                    <div class="metrics-grid">
-
-                        <article class="metric-card">
-
-                            <div class="metric-head">
-                                <span>Daily Consumption</span>
-                                <span class="metric-symbol purple">ϟ</span>
-                            </div>
-
-                            <div class="metric-value">
-                                <strong id="metric-energy">12.8</strong>
-                                <span>kWh</span>
-                            </div>
-
-                            <p class="metric-foot">
-                                Illustrative household total
-                            </p>
-
-                        </article>
-
-                        <article class="metric-card">
-
-                            <div class="metric-head">
-                                <span>Estimated Daily Cost</span>
-                                <span class="metric-symbol teal">₹</span>
-                            </div>
-
-                            <div class="metric-value">
-                                <strong id="metric-cost">102.40</strong>
-                                <span>INR</span>
-                            </div>
-
-                            <p class="metric-foot">
-                                At ₹8.00 per kWh
-                            </p>
-
-                        </article>
-
-                        <article class="metric-card">
-
-                            <div class="metric-head">
-                                <span>Analysis Status</span>
-                                <span class="metric-symbol blue">⌁</span>
-                            </div>
-
-                            <div class="metric-value">
-                                <strong id="metric-analysis">Ready</strong>
-                            </div>
-
-                            <p
-                                class="metric-foot"
-                                id="metric-analysis-foot"
-                            >
-                                Connect your consumption history
-                            </p>
-
-                        </article>
-
-                        <article class="metric-card">
-
-                            <div class="metric-head">
-                                <span>Detected Anomalies</span>
-                                <span class="metric-symbol amber">◇</span>
-                            </div>
-
-                            <div class="metric-value">
-                                <strong id="metric-anomalies">—</strong>
-                            </div>
-
-                            <p
-                                class="metric-foot"
-                                id="metric-anomalies-foot"
-                            >
-                                Upload CSV to scan readings
-                            </p>
-
-                        </article>
-
-                    </div>
-
-                    <!-- Chart + Module Access -->
-
-                    <div class="overview-lower">
-
-                        <article class="panel overview-chart">
-
-                            <div class="panel-heading">
-
-                                <div>
-
-                                    <h3>Consumption Trend</h3>
-
-                                    <p
-                                        class="muted small"
-                                        id="overview-chart-sub"
-                                    >
-                                        Illustrative 24-hour profile
-                                        (not a prediction)
-                                    </p>
-
-                                </div>
-
-                                <span class="chart-tag">
-                                    24 HOURS
-                                </span>
-
-                            </div>
-
-                            <div class="chart-container">
-
-                                <canvas
-                                    id="consumption-chart"
-                                    role="img"
-                                    aria-label="Hourly energy consumption trend"
-                                ></canvas>
-
-                            </div>
-
-                            <div class="chart-legend">
-
-                                <span class="legend-marker"></span>
-
-                                Hourly electricity consumption
-
-                                <span class="legend-units">
-                                    kWh
-                                </span>
-
-                            </div>
-
-                        </article>
-
-                        <!-- Quick Links -->
-
-                        <article class="panel quick-panel">
-
-                            <div class="panel-heading">
-
-                                <div>
-                                    <h3>Intelligence Modules</h3>
-                                    <p class="muted small">
-                                        Explore your analytics tools
-                                    </p>
-                                </div>
-
-                            </div>
-
-                            <button
-                                type="button"
-                                class="quick-link"
-                                data-go="appliances"
-                            >
-
-                                <span class="quick-icon lilac">▦</span>
-
-                                <span>
-                                    <strong>Appliance Studio</strong>
-                                    <small>Energy by appliance</small>
-                                </span>
-
-                                <span>↗</span>
-
-                            </button>
-
-                            <button
-                                type="button"
-                                class="quick-link"
-                                data-go="forecast"
-                            >
-
-                                <span class="quick-icon sky">⌁</span>
-
-                                <span>
-                                    <strong>ML Forecast</strong>
-                                    <small>Predict next-hour usage</small>
-                                </span>
-
-                                <span>↗</span>
-
-                            </button>
-
-                            <button
-                                type="button"
-                                class="quick-link"
-                                data-go="anomalies"
-                            >
-
-                                <span class="quick-icon peach">◇</span>
-
-                                <span>
-                                    <strong>Anomaly Center</strong>
-                                    <small>Detect unusual readings</small>
-                                </span>
-
-                                <span>↗</span>
-
-                            </button>
-
-                            <button
-                                type="button"
-                                class="quick-link"
-                                data-go="weather"
-                            >
-
-                                <span class="quick-icon mint">☀</span>
-
-                                <span>
-                                    <strong>Weather Advisor</strong>
-                                    <small>Weather-based guidance</small>
-                                </span>
-
-                                <span>↗</span>
-
-                            </button>
-
-                        </article>
-
-                    </div>
-
-                </section>
-
-                <!-- ================================
-                     VIEW 2: APPLIANCE STUDIO
-                ================================ -->
-
-                <section
-                    class="view"
-                    id="view-appliances"
-                    aria-label="Appliance energy analysis"
-                >
-
-                    <div class="page-heading">
-
-                        <div>
-
-                            <div class="eyebrow">
-                                <span class="eyebrow-line"></span>
-                                APPLIANCE INTELLIGENCE
-                            </div>
-
-                            <h1>Appliance Studio</h1>
-
-                            <p class="subtext">
-                                Calculate appliance-wise electricity
-                                consumption, estimated bills, and
-                                possible energy savings.
-                            </p>
-
-                        </div>
-
-                        <span class="page-ornament">▦</span>
-
-                    </div>
-
-                    <div class="two-column">
-
-                        <!-- Appliance Input -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-
-                                <div>
-                                    <h3>Your Appliances</h3>
-
-                                    <p class="muted small">
-                                        Enter rated watts, usage hours,
-                                        and appliance quantity.
-                                    </p>
-                                </div>
-
-                            </div>
-
-                            <form id="appliance-form">
-
-                                <div class="table-scroll">
-
-                                    <table class="input-table">
-
-                                        <thead>
-                                            <tr>
-                                                <th>APPLIANCE</th>
-                                                <th>WATTS</th>
-                                                <th>HRS/DAY</th>
-                                                <th>QTY</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody id="appliance-rows"></tbody>
-
-                                    </table>
-
-                                </div>
-
-                                <button
-                                    type="button"
-                                    class="text-action"
-                                    id="add-appliance"
-                                >
-                                    + Add Appliance
-                                </button>
-
-                                <div class="field-two">
-
-                                    <label>
-                                        Electricity Tariff
-                                        <small>₹ / kWh</small>
-
-                                        <input
-                                            id="manual-tariff"
-                                            type="number"
-                                            min="0"
-                                            step="0.5"
-                                            value="8"
-                                            required
-                                        >
-                                    </label>
-
-                                    <label>
-                                        Monthly Savings Goal
-                                        <small>₹</small>
-
-                                        <input
-                                            id="manual-target"
-                                            type="number"
-                                            min="0"
-                                            step="100"
-                                            value="500"
-                                            required
-                                        >
-                                    </label>
-
-                                </div>
-
-                                <button
-                                    class="btn primary full"
-                                    id="manual-submit"
-                                    type="submit"
-                                >
-                                    Analyze Appliances
-                                </button>
-
-                            </form>
-
-                        </article>
-
-                        <!-- Appliance Results -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-
-                                <div>
-                                    <h3>Energy Breakdown</h3>
-                                    <p class="muted small">
-                                        Estimated consumption and costs
-                                    </p>
-                                </div>
-
-                            </div>
-
-                            <div
-                                id="manual-placeholder"
-                                class="empty-state"
-                            >
-
-                                <div class="empty-symbol">▥</div>
-
-                                <strong>Ready for analysis</strong>
-
-                                <p>
-                                    Enter appliance details and run
-                                    the analysis to view results.
-                                </p>
-
-                            </div>
-
-                            <div
-                                id="manual-result"
-                                class="result-block hidden"
-                                aria-live="polite"
-                            >
-
-                                <div class="result-stat-grid">
-
-                                    <div>
-                                        <small>Daily Energy</small>
-                                        <strong id="appliance-daily">—</strong>
-                                    </div>
-
-                                    <div>
-                                        <small>Monthly Bill</small>
-                                        <strong id="appliance-bill">—</strong>
-                                    </div>
-
-                                    <div>
-                                        <small>Potential Savings</small>
-                                        <strong id="appliance-savings">—</strong>
-                                    </div>
-
-                                </div>
-
-                                <div
-                                    id="appliance-bars"
-                                    class="breakdown-bars"
-                                ></div>
-
-                                <h4>Recommendations</h4>
-
-                                <div
-                                    id="appliance-recs"
-                                    class="insight-list"
-                                ></div>
-
-                            </div>
-
-                        </article>
-
-                    </div>
-
-                </section>
-
-                <!-- ================================
-                     VIEW 3: ML FORECAST
-                ================================ -->
-
-                <section
-                    class="view"
-                    id="view-forecast"
-                    aria-label="Machine learning energy forecast"
-                >
-
-                    <div class="page-heading">
-
-                        <div>
-
-                            <div class="eyebrow">
-                                <span class="eyebrow-line"></span>
-                                MACHINE LEARNING
-                            </div>
-
-                            <h1>ML Energy Forecast</h1>
-
-                            <p class="subtext">
-                                Upload historical hourly energy
-                                consumption data to predict
-                                next-hour electricity demand.
-                            </p>
-
-                        </div>
-
-                        <span class="page-ornament">⌁</span>
-
-                    </div>
-
-                    <div class="two-column">
-
-                        <!-- Forecast Input -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Upload Consumption History</h3>
-                                    <p class="muted small">
-                                        Compatible hourly CSV required
-                                    </p>
-                                </div>
-                            </div>
-
-                            <form id="forecast-form">
-
-                                <label
-                                    class="upload-zone"
-                                    id="forecast-drop"
-                                >
-
-                                    <span class="upload-icon">↑</span>
-
-                                    <strong>
-                                        Select Hourly Energy CSV
-                                    </strong>
-
-                                    <span>
-                                        Browse files to upload
-                                    </span>
-
-                                    <small>
-                                        CSV up to 15 MB.
-                                        Usually Hour and Energy_kWh columns.
-                                    </small>
-
-                                    <input
-                                        id="forecast-file"
-                                        type="file"
-                                        accept=".csv,text/csv"
-                                        required
-                                    >
-
-                                </label>
-
-                                <div
-                                    class="selected-file"
-                                    id="forecast-filename"
-                                >
-                                    No file selected
-                                </div>
-
-                                <label class="stacked-field">
-
-                                    Electricity Tariff
-                                    <span>₹ per kWh</span>
-
-                                    <input
-                                        id="forecast-tariff"
-                                        type="number"
-                                        min="0"
-                                        step="0.5"
-                                        value="8"
-                                    >
-
-                                </label>
-
-                                <button
-                                    class="btn primary full"
-                                    id="forecast-submit"
-                                    type="submit"
-                                >
-                                    Run ML Prediction
-                                </button>
-
-                            </form>
-
-                        </article>
-
-                        <!-- Forecast Results -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Prediction Insights</h3>
-                                    <p class="muted small">
-                                        Random Forest forecasting model
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div
-                                id="forecast-placeholder"
-                                class="empty-state"
-                            >
-
-                                <div class="empty-symbol">⌁</div>
-
-                                <strong>
-                                    Your forecast will appear here
-                                </strong>
-
-                                <p>
-                                    Upload compatible electricity
-                                    readings to generate a prediction.
-                                </p>
-
-                            </div>
-
-                            <div
-                                id="forecast-result"
-                                class="hidden"
-                                aria-live="polite"
-                            >
-
-                                <div class="forecast-callout">
-
-                                    <small>MODEL OUTPUT</small>
-
-                                    <strong id="forecast-primary">
-                                        Prediction completed
-                                    </strong>
-
-                                    <span id="forecast-primary-label">
-                                        Model response
-                                    </span>
-
-                                </div>
-
-                                <h4>Complete Model Response</h4>
-
-                                <pre
-                                    id="forecast-json"
-                                    class="json-output"
-                                ></pre>
-
-                            </div>
-
-                        </article>
-
-                    </div>
-
-                </section>
-
-                <!-- ================================
-                     VIEW 4: ANOMALY CENTER
-                ================================ -->
-
-                <section
-                    class="view"
-                    id="view-anomalies"
-                    aria-label="Statistical anomaly detection"
-                >
-
-                    <div class="page-heading">
-
-                        <div>
-
-                            <div class="eyebrow">
-                                <span class="eyebrow-line"></span>
-                                ANOMALY INTELLIGENCE
-                            </div>
-
-                            <h1>Anomaly Center</h1>
-
-                            <p class="subtext">
-                                Identify unusually high or low
-                                electricity consumption readings
-                                using statistical analysis.
-                            </p>
-
-                        </div>
-
-                        <span class="page-ornament">◇</span>
-
-                    </div>
-
-                    <div class="two-column">
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Scan Energy Readings</h3>
-                                    <p class="muted small">
-                                        Detect unusual energy usage
-                                    </p>
-                                </div>
-                            </div>
-
-                            <form id="anomaly-form">
-
-                                <label class="upload-zone">
-
-                                    <span class="upload-icon">◇</span>
-
-                                    <strong>
-                                        Upload Hourly Energy Data
-                                    </strong>
-
-                                    <span>
-                                        Select a CSV for anomaly analysis
-                                    </span>
-
-                                    <small>
-                                        Requires Energy_kWh column.
-                                    </small>
-
-                                    <input
-                                        id="anomaly-file"
-                                        type="file"
-                                        accept=".csv,text/csv"
-                                        required
-                                    >
-
-                                </label>
-
-                                <div
-                                    class="selected-file"
-                                    id="anomaly-filename"
-                                >
-                                    No file selected
-                                </div>
-
-                                <div class="info-strip">
-                                    Anomaly flags identify unusual
-                                    readings, not confirmed faults
-                                    or electricity wastage.
-                                </div>
-
-                                <button
-                                    id="anomaly-submit"
-                                    class="btn primary full"
-                                    type="submit"
-                                >
-                                    Detect Anomalies
-                                </button>
-
-                            </form>
-
-                        </article>
-
-                        <!-- Results -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Anomaly Detection Results</h3>
-                                    <p class="muted small">
-                                        Statistical baseline analysis
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div
-                                id="anomaly-placeholder"
-                                class="empty-state"
-                            >
-
-                                <div class="empty-symbol">◇</div>
-
-                                <strong>No analysis yet</strong>
-
-                                <p>
-                                    Upload a CSV to identify
-                                    unusual energy consumption.
-                                </p>
-
-                            </div>
-
-                            <div
-                                id="anomaly-result"
-                                class="hidden"
-                                aria-live="polite"
-                            >
-
-                                <div class="result-stat-grid">
-
-                                    <div>
-                                        <small>Readings</small>
-                                        <strong id="anomaly-rows">—</strong>
-                                    </div>
-
-                                    <div>
-                                        <small>Anomalies</small>
-                                        <strong id="anomaly-count">—</strong>
-                                    </div>
-
-                                    <div>
-                                        <small>Anomaly Rate</small>
-                                        <strong id="anomaly-rate">—</strong>
-                                    </div>
-
-                                </div>
-
-                                <h4>Recent Detected Anomalies</h4>
-
-                                <div class="table-scroll">
-
-                                    <table class="result-table">
-
-                                        <thead>
-                                            <tr>
-                                                <th>CONSUMPTION</th>
-                                                <th>EXPECTED</th>
-                                                <th>CLASSIFICATION</th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody id="anomaly-table"></tbody>
-
-                                    </table>
-
-                                </div>
-
-                                <p
-                                    id="anomaly-info"
-                                    class="muted small"
-                                ></p>
-
-                            </div>
-
-                        </article>
-
-                    </div>
-
-                </section>
-
-                <!-- ================================
-                     VIEW 5: WEATHER ADVISOR
-                ================================ -->
-
-                <section
-                    class="view"
-                    id="view-weather"
-                    aria-label="Weather-aware energy advisor"
-                >
-
-                    <div class="page-heading">
-
-                        <div>
-
-                            <div class="eyebrow">
-                                <span class="eyebrow-line"></span>
-                                ENVIRONMENTAL INTELLIGENCE
-                            </div>
-
-                            <h1>Weather Advisor</h1>
-
-                            <p class="subtext">
-                                Get contextual energy-saving advice
-                                based on local weather conditions.
-                            </p>
-
-                        </div>
-
-                        <span class="page-ornament">☀</span>
-
-                    </div>
-
-                    <div class="two-column">
-
-                        <!-- Weather Inputs -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Local Weather Analysis</h3>
-                                    <p class="muted small">
-                                        Weather data from Open-Meteo
-                                    </p>
-                                </div>
-                            </div>
-
-                            <form id="weather-form">
-
-                                <label class="stacked-field">
-
-                                    City
-
-                                    <input
-                                        id="weather-city"
-                                        type="text"
-                                        placeholder="e.g. Ghaziabad"
-                                        value="Ghaziabad"
-                                        required
-                                    >
-
-                                </label>
-
-                                <div class="checks-label">
-                                    Available Appliances
-                                </div>
-
-                                <div class="check-cards">
-
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            value="Air Conditioner"
-                                            checked
-                                        >
-                                        Air Conditioner
-                                    </label>
-
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            value="Fan"
-                                            checked
-                                        >
-                                        Ceiling Fan
-                                    </label>
-
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            value="Lights"
-                                            checked
-                                        >
-                                        Lighting
-                                    </label>
-
-                                </div>
-
-                                <label class="stacked-field">
-
-                                    Electricity Tariff
-                                    <span>₹ per kWh</span>
-
-                                    <input
-                                        id="weather-tariff"
-                                        type="number"
-                                        min="0"
-                                        step="0.5"
-                                        value="8"
-                                    >
-
-                                </label>
-
-                                <button
-                                    class="btn primary full"
-                                    id="weather-submit"
-                                    type="submit"
-                                >
-                                    Get Weather Advice
-                                </button>
-
-                            </form>
-
-                        </article>
-
-                        <!-- Weather Results -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Weather Intelligence</h3>
-                                    <p class="muted small">
-                                        Local conditions and recommendations
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div
-                                id="weather-placeholder"
-                                class="empty-state"
-                            >
-
-                                <div class="empty-symbol">☀</div>
-
-                                <strong>
-                                    Weather insights on demand
-                                </strong>
-
-                                <p>
-                                    Enter a city to view current conditions
-                                    and appliance-specific guidance.
-                                </p>
-
-                            </div>
-
-                            <div
-                                id="weather-result"
-                                class="hidden"
-                                aria-live="polite"
-                            >
-
-                                <div class="weather-card">
-
-                                    <div>
-
-                                        <small id="weather-location">
-                                            LOCAL CONDITIONS
-                                        </small>
-
-                                        <strong id="weather-temp">
-                                            —
-                                        </strong>
-
-                                        <span id="weather-condition">
-                                            Weather context
-                                        </span>
-
-                                    </div>
-
-                                    <span
-                                        class="weather-big-icon"
-                                        aria-hidden="true"
-                                    >
-                                        ☀
-                                    </span>
-
-                                </div>
-
-                                <div
-                                    id="weather-extra"
-                                    class="weather-extras"
-                                ></div>
-
-                                <h4>Personalized Energy Advice</h4>
-
-                                <div
-                                    id="weather-alerts"
-                                    class="insight-list"
-                                ></div>
-
-                                <details class="raw-details">
-
-                                    <summary>
-                                        Full Weather Agent Response
-                                    </summary>
-
-                                    <pre
-                                        id="weather-json"
-                                        class="json-output"
-                                    ></pre>
-
-                                </details>
-
-                            </div>
-
-                        </article>
-
-                    </div>
-
-                </section>
-
-                <!-- ================================
-                     VIEW 6: WHAT-IF SIMULATOR
-                ================================ -->
-
-                <section
-                    class="view"
-                    id="view-simulator"
-                    aria-label="Energy savings simulator"
-                >
-
-                    <div class="page-heading">
-
-                        <div>
-
-                            <div class="eyebrow">
-                                <span class="eyebrow-line"></span>
-                                ENERGY OPTIMIZATION
-                            </div>
-
-                            <h1>What-If Simulator</h1>
-
-                            <p class="subtext">
-                                Evaluate potential energy and cost
-                                savings before changing appliance usage.
-                            </p>
-
-                        </div>
-
-                        <span class="page-ornament">◈</span>
-
-                    </div>
-
-                    <div class="two-column">
-
-                        <!-- Simulator Inputs -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Build Your Scenario</h3>
-                                    <p class="muted small">
-                                        Change values to compare estimates
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="stacked-field">
-
-                                Appliance Power
-                                <span>watts</span>
-
-                                <input
-                                    id="sim-watts"
-                                    type="number"
-                                    min="0"
-                                    value="1500"
-                                >
-
-                            </div>
-
-                            <div class="stacked-field">
-
-                                Current Daily Usage
-                                <span>hours</span>
-
-                                <input
-                                    id="sim-hours"
-                                    type="number"
-                                    min="0"
-                                    max="24"
-                                    step="0.5"
-                                    value="8"
-                                >
-
-                            </div>
-
-                            <div class="stacked-field">
-
-                                Reduce Daily Usage By
-
-                                <span>
-                                    <strong id="sim-reduction-val">2</strong>
-                                    hours
-                                </span>
-
-                                <input
-                                    id="sim-reduction"
-                                    type="range"
-                                    min="0"
-                                    max="8"
-                                    step="0.5"
-                                    value="2"
-                                    aria-label="Daily usage reduction in hours"
-                                >
-
-                            </div>
-
-                            <div class="stacked-field">
-
-                                Number of Appliances
-                                <span>units</span>
-
-                                <input
-                                    id="sim-qty"
-                                    type="number"
-                                    min="1"
-                                    max="100"
-                                    value="1"
-                                >
-
-                            </div>
-
-                            <div class="stacked-field">
-
-                                Electricity Tariff
-                                <span>₹ per kWh</span>
-
-                                <input
-                                    id="sim-tariff"
-                                    type="number"
-                                    min="0"
-                                    step="0.5"
-                                    value="8"
-                                >
-
-                            </div>
-
-                        </article>
-
-                        <!-- Simulation Results -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Projected Impact</h3>
-                                    <p class="muted small">
-                                        Estimated savings over 30 days
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="sim-summary">
-
-                                <div class="sim-leaf">↘</div>
-
-                                <p>
-                                    Estimated Monthly Savings
-                                </p>
-
-                                <strong id="sim-savings">
-                                    ₹720
-                                </strong>
-
-                                <span id="sim-energy">
-                                    90 kWh saved per month
-                                </span>
-
-                            </div>
-
-                            <div class="compare">
-
-                                <div>
-                                    <span>Before</span>
-                                    <strong id="sim-before">
-                                        ₹2,880
-                                    </strong>
-                                </div>
-
-                                <div>
-                                    <span>After</span>
-                                    <strong id="sim-after">
-                                        ₹2,160
-                                    </strong>
-                                </div>
-
-                            </div>
-
-                            <div class="sim-track">
-                                <div id="sim-track-fill"></div>
-                            </div>
-
-                            <div class="info-strip">
-                                These estimates assume constant rated
-                                power and a flat electricity tariff.
-                                Actual savings may differ.
-                            </div>
-
-                        </article>
-
-                    </div>
-
-                </section>
-
-                <!-- ================================
-                     VIEW 7: ENERGY COPILOT
-                ================================ -->
-
-                <section
-                    class="view"
-                    id="view-copilot"
-                    aria-label="Energy Copilot"
-                >
-
-                    <div class="page-heading">
-
-                        <div>
-
-                            <div class="eyebrow">
-                                <span class="eyebrow-line"></span>
-                                TOOL-BASED ENERGY AGENT
-                            </div>
-
-                            <h1>Energy Copilot</h1>
-
-                            <p class="subtext">
-                                Ask supported questions about
-                                consumption, costs, and savings
-                                using your appliance information.
-                            </p>
-
-                        </div>
-
-                        <span class="page-ornament">✳</span>
-
-                    </div>
-
-                    <div class="two-column">
-
-                        <!-- Copilot Input -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Ask Your Energy Assistant</h3>
-
-                                    <p class="muted small">
-                                        Explainable calculations
-                                        and tool-based decisions
-                                    </p>
-                                </div>
-                            </div>
-
-                            <form id="copilot-form">
-
-                                <label class="stacked-field">
-
-                                    Your Question
-
-                                    <textarea
-                                        id="copilot-question"
-                                        class="agent-textarea"
-                                        required
-                                        maxlength="600"
-                                        placeholder="How can I reduce my electricity bill?"
-                                    >How can I reduce my electricity bill?</textarea>
-
-                                </label>
-
-                                <p class="muted small">
-                                    Replace sample appliance values
-                                    with your own information.
-                                </p>
-
-                                <div class="agent-input-grid">
-
-                                    <label>
-                                        Appliance
-
-                                        <input
-                                            id="agent-name"
-                                            type="text"
-                                            value="Air Conditioner"
-                                            required
-                                        >
-                                    </label>
-
-                                    <label>
-                                        Power (W)
-
-                                        <input
-                                            id="agent-watts"
-                                            type="number"
-                                            min="0"
-                                            value="1500"
-                                            required
-                                        >
-                                    </label>
-
-                                    <label>
-                                        Hours/Day
-
-                                        <input
-                                            id="agent-hours"
-                                            type="number"
-                                            min="0"
-                                            max="24"
-                                            step="0.5"
-                                            value="6"
-                                            required
-                                        >
-                                    </label>
-
-                                    <label>
-                                        Quantity
-
-                                        <input
-                                            id="agent-qty"
-                                            type="number"
-                                            min="1"
-                                            max="100"
-                                            step="1"
-                                            value="1"
-                                            required
-                                        >
-                                    </label>
-
-                                </div>
-
-                                <div class="agent-input-grid">
-
-                                    <label>
-                                        Tariff (₹/kWh)
-
-                                        <input
-                                            id="agent-tariff"
-                                            type="number"
-                                            min="0"
-                                            step="0.5"
-                                            value="8"
-                                            required
-                                        >
-                                    </label>
-
-                                </div>
-
-                                <button
-                                    id="agent-submit"
-                                    class="btn primary full"
-                                    type="submit"
-                                >
-                                    Run Decision Agent
-                                </button>
-
-                            </form>
-
-                            <div class="info-strip">
-                                This Copilot uses tool-based decision
-                                logic. It is not currently a generative
-                                LLM or an autonomous device controller.
-                            </div>
-
-                        </article>
-
-                        <!-- Copilot Results -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Agent Response</h3>
-
-                                    <p class="muted small">
-                                        Calculations, tool trace,
-                                        and suggested actions
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div
-                                id="agent-placeholder"
-                                class="empty-state"
-                            >
-
-                                <div class="empty-symbol">✳</div>
-
-                                <strong>
-                                    Ask a question to begin
-                                </strong>
-
-                                <p>
-                                    Results will be calculated
-                                    from the appliance values entered.
-                                </p>
-
-                            </div>
-
-                            <div
-                                id="agent-result"
-                                class="hidden"
-                                aria-live="polite"
-                            >
-
-                                <!-- User question bubble -->
-
-                                <div
-                                    class="agent-question-preview"
-                                ></div>
-
-                                <!-- Assistant response -->
-
-                                <div
-                                    id="agent-answer"
-                                    class="agent-answer"
-                                ></div>
-
-                                <h4>Tools Used</h4>
-
-                                <div
-                                    id="agent-tools"
-                                    class="agent-pills"
-                                ></div>
-
-                                <h4>Recommended Actions</h4>
-
-                                <div
-                                    id="agent-actions"
-                                    class="insight-list"
-                                ></div>
-
-                                <h4>Calculation Assumptions</h4>
-
-                                <p
-                                    id="agent-assumptions"
-                                    class="muted small"
-                                ></p>
-
-                            </div>
-
-                        </article>
-
-                    </div>
-
-                </section>
-
-                <!-- ================================
-                     VIEW 8: ML PATTERN LAB
-                ================================ -->
-
-                <section
-                    class="view"
-                    id="view-patterns"
-                    aria-label="Machine learning pattern analysis"
-                >
-
-                    <div class="page-heading">
-
-                        <div>
-
-                            <div class="eyebrow">
-                                <span class="eyebrow-line"></span>
-                                UNSUPERVISED MACHINE LEARNING
-                            </div>
-
-                            <h1>ML Pattern Lab</h1>
-
-                            <p class="subtext">
-                                Explore unusual electricity consumption
-                                patterns using Isolation Forest.
-                            </p>
-
-                        </div>
-
-                        <span class="page-ornament">⬡</span>
-
-                    </div>
-
-                    <div class="two-column">
-
-                        <!-- ML Input -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>Discover Usage Outliers</h3>
-                                    <p class="muted small">
-                                        Isolation Forest analysis
-                                    </p>
-                                </div>
-                            </div>
-
-                            <form id="patterns-form">
-
-                                <label class="upload-zone">
-
-                                    <span class="upload-icon">⬡</span>
-
-                                    <strong>Select Energy CSV</strong>
-
-                                    <span>
-                                        Upload historical electricity readings
-                                    </span>
-
-                                    <small>
-                                        Requires Energy_kWh
-                                        and at least 50 valid readings
-                                    </small>
-
-                                    <input
-                                        id="patterns-file"
-                                        type="file"
-                                        accept=".csv,text/csv"
-                                        required
-                                    >
-
-                                </label>
-
-                                <div
-                                    class="selected-file"
-                                    id="patterns-filename"
-                                >
-                                    No file selected
-                                </div>
-
-                                <label class="stacked-field">
-
-                                    Expected Outlier Proportion
-
-                                    <span>
-                                        Percentage
-                                    </span>
-
-                                    <input
-                                        id="patterns-contamination"
-                                        type="number"
-                                        min="1"
-                                        max="20"
-                                        step="1"
-                                        value="5"
-                                        required
-                                    >
-
-                                </label>
-
-                                <button
-                                    id="patterns-submit"
-                                    type="submit"
-                                    class="btn primary full"
-                                >
-                                    Run ML Pattern Analysis
-                                </button>
-
-                            </form>
-
-                            <div class="info-strip">
-                                Isolation Forest identifies unusual
-                                statistical patterns. Results do not
-                                confirm equipment faults.
-                            </div>
-
-                        </article>
-
-                        <!-- ML Pattern Results -->
-
-                        <article class="panel">
-
-                            <div class="panel-heading">
-                                <div>
-                                    <h3>ML Discovery Report</h3>
-
-                                    <p class="muted small">
-                                        Outlier statistics and
-                                        high-scoring observations
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div
-                                id="patterns-placeholder"
-                                class="empty-state"
-                            >
-
-                                <div class="empty-symbol">⬡</div>
-
-                                <strong>
-                                    Awaiting Historical Readings
-                                </strong>
-
-                                <p>
-                                    Upload compatible energy data
-                                    to identify unusual observations.
-                                </p>
-
-                            </div>
-
-                            <div
-                                id="patterns-result"
-                                class="hidden"
-                                aria-live="polite"
-                            >
-
-                                <div class="result-stat-grid">
-
-                                    <div>
-                                        <small>Scanned</small>
-                                        <strong id="patterns-rows">
-                                            —
-                                        </strong>
-                                    </div>
-
-                                    <div>
-                                        <small>ML Outliers</small>
-                                        <strong id="patterns-count">
-                                            —
-                                        </strong>
-                                    </div>
-
-                                    <div>
-                                        <small>Typical kWh</small>
-                                        <strong id="patterns-median">
-                                            —
-                                        </strong>
-                                    </div>
-
-                                </div>
-
-                                <h4>Features Used</h4>
-
-                                <div
-                                    class="agent-pills"
-                                    id="patterns-features"
-                                ></div>
-
-                                <h4>Highest-Scoring Outlier Samples</h4>
-
-                                <div
-                                    id="patterns-list"
-                                    class="insight-list"
-                                ></div>
-
-                                <p
-                                    id="patterns-notes"
-                                    class="muted small"
-                                ></p>
-
-                            </div>
-
-                        </article>
-
-                    </div>
-
-                </section>
-
-            </main>
-
-            <!-- ====================================
-                 FOOTER
-            ==================================== -->
-
-            <footer class="footer">
-
-                <span>
-                    WattMinds — Energy Intelligence Platform
-                </span>
-
-                <span>
-                    Decision-support prototype.
-                    Anomaly flags indicate unusual readings,
-                    not confirmed faults.
-                </span>
-
-            </footer>
-
+  <div class="app-shell">
+
+    <!-- Mobile navigation backdrop -->
+    <div class="mobile-nav-backdrop" aria-hidden="true"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <a href="#overview" class="brand"
+         data-view-link="overview"
+         aria-label="WattMinds Overview">
+        <span class="brand-icon">ϟ</span>
+        <span class="brand-text">
+          <b>Watt<span>Minds</span></b>
+          <small>ENERGY INTELLIGENCE</small>
+        </span>
+      </a>
+
+      <div class="workspace">
+        <div class="workspace-avatar">W</div>
+        <div>
+          <strong>My Workspace</strong>
+          <small>Energy analytics platform</small>
+        </div>
+      </div>
+
+      <p class="nav-eyebrow">WORKSPACE</p>
+
+      <nav class="main-nav" aria-label="Main navigation">
+        <button type="button" class="nav-item active"
+                data-view="overview">
+          <span class="nav-icon">◫</span> Overview
+        </button>
+        <button type="button" class="nav-item"
+                data-view="appliances">
+          <span class="nav-icon">▦</span> Appliance Studio
+        </button>
+        <button type="button" class="nav-item"
+                data-view="forecast">
+          <span class="nav-icon">⌁</span> ML Forecast
+        </button>
+        <button type="button" class="nav-item"
+                data-view="anomalies">
+          <span class="nav-icon">◇</span> Anomaly Center
+        </button>
+        <button type="button" class="nav-item"
+                data-view="weather">
+          <span class="nav-icon">☀</span> Weather Advisor
+        </button>
+        <button type="button" class="nav-item"
+                data-view="copilot">
+          <span class="nav-icon">✳</span> Energy Copilot
+        </button>
+        <button type="button" class="nav-item"
+                data-view="patterns">
+          <span class="nav-icon">⬡</span> ML Pattern Lab
+        </button>
+        <button type="button" class="nav-item"
+                data-view="simulator">
+          <span class="nav-icon">◈</span> What-If Simulator
+        </button>
+      </nav>
+
+      <p class="nav-eyebrow second">SYSTEM</p>
+
+      <div class="system-mini">
+        <span class="live-dot" id="sidebar-status-dot"></span>
+        <div>
+          <strong id="sidebar-status">Checking API...</strong>
+          <small>FastAPI connection</small>
+        </div>
+      </div>
+
+      <div class="sidebar-bottom">
+        <strong>Make smarter energy decisions.</strong>
+        <p>Upload your power readings and explore useful insights.</p>
+        <button type="button" id="side-upload"
+                class="outline-light">
+          Analyze CSV <span>↗</span>
+        </button>
+      </div>
+      <p class="sidebar-foot">WattMinds 2.0 · Academic Project</p>
+    </aside>
+
+    <div class="main-column">
+      <!-- Top Header -->
+      <header class="topbar">
+        <div class="top-left">
+          <button id="menu-btn" type="button"
+                  class="icon-button menu-btn"
+                  aria-label="Open navigation"
+                  aria-controls="sidebar"
+                  aria-expanded="false">☰</button>
+          <span class="breadcrumb">Workspace</span>
+          <span class="crumb-slash">/</span>
+          <span id="breadcrumb-current">Overview</span>
         </div>
 
+        <div class="top-actions">
+          <span class="current-chip">
+            <span class="live-dot" id="header-status-dot"></span>
+            <span id="header-status">Connecting</span>
+          </span>
+          <button id="date-chip" type="button"
+                  class="date-chip"></button>
+          <span class="avatar" aria-label="Workspace">W</span>
+        </div>
+      </header>
+
+      <main class="page-container">
+
+        <!-- 1. OVERVIEW -->
+        <section class="view active" id="view-overview">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow">
+                <span class="eyebrow-line"></span>
+                ENERGY CONTROL CENTER
+              </div>
+              <h1>Energy at a glance</h1>
+              <p class="subtext">
+                Smarter electricity decisions through data,
+                forecasts and intelligent analysis.
+              </p>
+            </div>
+            <button id="overview-action" type="button"
+                    class="btn primary">
+              Analyze Energy Data ↗
+            </button>
+          </div>
+
+          <article class="hero-card">
+            <div class="hero-content">
+              <span class="hero-pill">✦ WATTMINDS 2.0</span>
+              <h2>Know your energy.<br>
+                <em>Control your impact.</em>
+              </h2>
+              <p>
+                Explore ML forecasts, appliance consumption,
+                unusual patterns and potential savings in
+                one intelligent workspace.
+              </p>
+              <button type="button" class="btn hero-btn"
+                      data-go="forecast">
+                Explore ML Forecast ↗
+              </button>
+            </div>
+
+            <div class="hero-visual" aria-hidden="true">
+              <div class="power-grid"></div>
+              <div class="flow-line flow-line-1"></div>
+              <div class="flow-line flow-line-2"></div>
+              <div class="flow-line flow-line-3"></div>
+              <div class="reactor-assembly">
+                <div class="reactor-shadow"></div>
+                <div class="reactor-halo"></div>
+                <div class="reactor-disk">
+                  <div class="reactor-blades"></div>
+                  <div class="reactor-center">
+                    <span class="reactor-bolt">ϟ</span>
+                  </div>
+                </div>
+                <div class="reactor-ring ring-one"></div>
+                <div class="reactor-ring ring-two"></div>
+                <div class="spark-point spark-1"></div>
+                <div class="spark-point spark-2"></div>
+                <div class="spark-point spark-3"></div>
+              </div>
+              <div class="glow one"></div>
+              <div class="glow two"></div>
+              <div class="energy-ring"><span>ϟ</span></div>
+              <div class="floating-stat fs-one">↗ Predict Demand</div>
+              <div class="floating-stat fs-two">✧ Find Patterns</div>
+              <div class="orbit orbit-a"></div>
+              <div class="orbit orbit-b"></div>
+            </div>
+          </article>
+
+          <div class="section-title-row">
+            <div>
+              <h3>Energy Overview</h3>
+              <p class="muted small" id="overview-source">
+                Illustrative values · connect real readings
+              </p>
+            </div>
+            <span class="demo-chip" id="overview-badge">
+              SAMPLE DATA
+            </span>
+          </div>
+
+          <div class="metrics-grid">
+            <article class="metric-card">
+              <div class="metric-head">
+                <span>Daily Consumption</span>
+                <span class="metric-symbol purple">ϟ</span>
+              </div>
+              <div class="metric-value">
+                <strong id="metric-energy">12.8</strong>
+                <span>kWh</span>
+              </div>
+              <p class="metric-foot">Illustrative household total</p>
+            </article>
+
+            <article class="metric-card">
+              <div class="metric-head">
+                <span>Estimated Daily Cost</span>
+                <span class="metric-symbol teal">₹</span>
+              </div>
+              <div class="metric-value">
+                <strong id="metric-cost">102.40</strong>
+                <span>INR</span>
+              </div>
+              <p class="metric-foot">At ₹8 per kWh</p>
+            </article>
+
+            <article class="metric-card">
+              <div class="metric-head">
+                <span>Analysis Status</span>
+                <span class="metric-symbol blue">⌁</span>
+              </div>
+              <div class="metric-value">
+                <strong id="metric-analysis">Ready</strong>
+              </div>
+              <p class="metric-foot" id="metric-analysis-foot">
+                Connect consumption history
+              </p>
+            </article>
+
+            <article class="metric-card">
+              <div class="metric-head">
+                <span>Detected Anomalies</span>
+                <span class="metric-symbol amber">◇</span>
+              </div>
+              <div class="metric-value">
+                <strong id="metric-anomalies">—</strong>
+              </div>
+              <p class="metric-foot" id="metric-anomalies-foot">
+                Upload CSV to scan readings
+              </p>
+            </article>
+          </div>
+
+          <div class="overview-lower">
+            <article class="panel overview-chart">
+              <div class="panel-heading">
+                <div>
+                  <h3>Consumption Trend</h3>
+                  <p class="muted small" id="overview-chart-sub">
+                    Illustrative 24-hour profile (not a prediction)
+                  </p>
+                </div>
+                <span class="chart-tag">24 HOURS</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="consumption-chart" role="img"
+                        aria-label="Energy consumption graph"></canvas>
+              </div>
+              <div class="chart-legend">
+                <span class="legend-marker"></span>
+                Hourly electricity consumption
+                <span class="legend-units">kWh</span>
+              </div>
+            </article>
+
+            <article class="panel quick-panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Intelligence Modules</h3>
+                  <p class="muted small">Explore the platform</p>
+                </div>
+              </div>
+
+              <button type="button" class="quick-link"
+                      data-go="appliances">
+                <span class="quick-icon lilac">▦</span>
+                <span>
+                  <strong>Appliance Studio</strong>
+                  <small>Break down costs by device</small>
+                </span>
+                <span>↗</span>
+              </button>
+
+              <button type="button" class="quick-link"
+                      data-go="forecast">
+                <span class="quick-icon sky">⌁</span>
+                <span>
+                  <strong>ML Forecast</strong>
+                  <small>Predict electricity demand</small>
+                </span>
+                <span>↗</span>
+              </button>
+
+              <button type="button" class="quick-link"
+                      data-go="anomalies">
+                <span class="quick-icon peach">◇</span>
+                <span>
+                  <strong>Anomaly Center</strong>
+                  <small>Identify unusual readings</small>
+                </span>
+                <span>↗</span>
+              </button>
+
+              <button type="button" class="quick-link"
+                      data-go="weather">
+                <span class="quick-icon mint">☀</span>
+                <span>
+                  <strong>Weather Advisor</strong>
+                  <small>Context-aware energy advice</small>
+                </span>
+                <span>↗</span>
+              </button>
+            </article>
+          </div>
+        </section>
+
+        <!-- 2. APPLIANCE STUDIO -->
+        <section class="view" id="view-appliances">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow">▦ APPLIANCE INTELLIGENCE</div>
+              <h1>Appliance Studio</h1>
+              <p class="subtext">
+                Analyze power usage, bills and saving opportunities.
+              </p>
+            </div>
+          </div>
+
+          <div class="two-column">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Your Appliances</h3>
+                  <p class="muted small">
+                    Enter watts, hours and quantity
+                  </p>
+                </div>
+              </div>
+
+              <form id="appliance-form">
+                <div class="table-scroll">
+                  <table class="input-table">
+                    <thead>
+                      <tr>
+                        <th>APPLIANCE</th>
+                        <th>WATTS</th>
+                        <th>HRS/DAY</th>
+                        <th>QTY</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="appliance-rows"></tbody>
+                  </table>
+                </div>
+
+                <button type="button" class="text-action"
+                        id="add-appliance">
+                  ＋ Add Appliance
+                </button>
+
+                <div class="field-two">
+                  <label>
+                    Tariff <small>₹/kWh</small>
+                    <input id="manual-tariff" type="number"
+                           min="0" step="0.5" value="8">
+                  </label>
+                  <label>
+                    Monthly Savings Goal <small>₹</small>
+                    <input id="manual-target" type="number"
+                           min="0" step="100" value="500">
+                  </label>
+                </div>
+
+                <button class="btn primary full" type="submit"
+                        id="manual-submit">
+                  Analyze Appliances ↗
+                </button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Energy Breakdown</h3>
+                  <p class="muted small">Results from your inputs</p>
+                </div>
+              </div>
+
+              <div id="manual-placeholder" class="empty-state">
+                <div class="empty-symbol">▥</div>
+                <strong>Ready when you are</strong>
+                <p>Run the analysis to see consumption and cost.</p>
+              </div>
+
+              <div id="manual-result" class="result-block hidden"
+                   aria-live="polite">
+                <div class="result-stat-grid">
+                  <div>
+                    <small>Daily Energy</small>
+                    <strong id="appliance-daily">—</strong>
+                  </div>
+                  <div>
+                    <small>Monthly Bill</small>
+                    <strong id="appliance-bill">—</strong>
+                  </div>
+                  <div>
+                    <small>Potential Savings</small>
+                    <strong id="appliance-savings">—</strong>
+                  </div>
+                </div>
+                <div id="appliance-bars" class="breakdown-bars"></div>
+                <h4>Recommendations</h4>
+                <div id="appliance-recs" class="insight-list"></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- 3. ML FORECAST -->
+        <section class="view" id="view-forecast">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow">⌁ MACHINE LEARNING</div>
+              <h1>ML Energy Forecast</h1>
+              <p class="subtext">
+                Predict future demand from hourly consumption data.
+              </p>
+            </div>
+          </div>
+
+          <div class="two-column">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Upload Consumption History</h3>
+                  <p class="muted small">Hourly CSV required</p>
+                </div>
+              </div>
+
+              <form id="forecast-form">
+                <label class="upload-zone" id="forecast-drop">
+                  <span class="upload-icon">↑</span>
+                  <strong>Select your Energy CSV</strong>
+                  <span>Tap to browse files</span>
+                  <small>CSV · Up to 15 MB</small>
+                  <input id="forecast-file" type="file"
+                         accept=".csv,text/csv" required>
+                </label>
+                <div id="forecast-filename" class="selected-file">
+                  No file selected
+                </div>
+
+                <label class="stacked-field">
+                  Electricity Tariff <span>₹/kWh</span>
+                  <input id="forecast-tariff" type="number"
+                         min="0" step="0.5" value="8">
+                </label>
+
+                <button id="forecast-submit" type="submit"
+                        class="btn primary full">
+                  Run ML Prediction ↗
+                </button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Prediction Insights</h3>
+                  <p class="muted small">
+                    Result from the trained model
+                  </p>
+                </div>
+              </div>
+
+              <div id="forecast-placeholder" class="empty-state">
+                <div class="empty-symbol">⌁</div>
+                <strong>Your forecast appears here</strong>
+                <p>Upload valid historical readings.</p>
+              </div>
+
+              <div id="forecast-result" class="hidden"
+                   aria-live="polite">
+                <div class="forecast-callout">
+                  <small>MODEL OUTPUT</small>
+                  <strong id="forecast-primary">—</strong>
+                  <span id="forecast-primary-label">
+                    Prediction result
+                  </span>
+                </div>
+                <h4>Complete Model Response</h4>
+                <pre id="forecast-json" class="json-output"></pre>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- 4. ANOMALY CENTER -->
+        <section class="view" id="view-anomalies">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow">◇ ANOMALY INTELLIGENCE</div>
+              <h1>Anomaly Center</h1>
+              <p class="subtext">
+                Identify unusually high or low energy readings.
+              </p>
+            </div>
+          </div>
+
+          <div class="two-column">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Scan Energy Readings</h3>
+                  <p class="muted small">
+                    Statistical anomaly detection
+                  </p>
+                </div>
+              </div>
+
+              <form id="anomaly-form">
+                <label class="upload-zone">
+                  <span class="upload-icon">◇</span>
+                  <strong>Upload Hourly Energy CSV</strong>
+                  <span>Tap to select data</span>
+                  <small>Requires Energy_kWh column</small>
+                  <input id="anomaly-file" type="file"
+                         accept=".csv,text/csv" required>
+                </label>
+                <div id="anomaly-filename" class="selected-file">
+                  No file selected
+                </div>
+                <div class="info-strip">
+                  Statistical anomalies are not confirmed faults.
+                </div>
+                <button id="anomaly-submit" type="submit"
+                        class="btn primary full">
+                  Detect Anomalies ↗
+                </button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Anomaly Results</h3>
+                  <p class="muted small">Historical analysis</p>
+                </div>
+              </div>
+
+              <div id="anomaly-placeholder" class="empty-state">
+                <div class="empty-symbol">◇</div>
+                <strong>No analysis yet</strong>
+                <p>Upload readings to identify unusual patterns.</p>
+              </div>
+
+              <div id="anomaly-result" class="hidden"
+                   aria-live="polite">
+                <div class="result-stat-grid">
+                  <div>
+                    <small>Readings</small>
+                    <strong id="anomaly-rows">—</strong>
+                  </div>
+                  <div>
+                    <small>Anomalies</small>
+                    <strong id="anomaly-count">—</strong>
+                  </div>
+                  <div>
+                    <small>Rate</small>
+                    <strong id="anomaly-rate">—</strong>
+                  </div>
+                </div>
+
+                <h4>Recent Detected Anomalies</h4>
+                <div class="table-scroll">
+                  <table class="result-table">
+                    <thead>
+                      <tr>
+                        <th>CONSUMPTION</th>
+                        <th>EXPECTED</th>
+                        <th>CLASSIFICATION</th>
+                      </tr>
+                    </thead>
+                    <tbody id="anomaly-table"></tbody>
+                  </table>
+                </div>
+                <p id="anomaly-info" class="muted small"></p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- 5. WEATHER ADVISOR -->
+        <section class="view" id="view-weather">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow">☀ ENVIRONMENTAL CONTEXT</div>
+              <h1>Weather Advisor</h1>
+              <p class="subtext">
+                Local weather-aware electricity recommendations.
+              </p>
+            </div>
+          </div>
+
+          <div class="two-column">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Local Weather Analysis</h3>
+                  <p class="muted small">
+                    Choose location and appliances
+                  </p>
+                </div>
+              </div>
+
+              <form id="weather-form">
+                <label class="stacked-field">
+                  City
+                  <input id="weather-city" type="text"
+                         value="Ghaziabad"
+                         placeholder="Enter a city" required>
+                </label>
+
+                <p class="checks-label">Available Appliances</p>
+                <div class="check-cards">
+                  <label>
+                    <input type="checkbox"
+                           value="Air Conditioner" checked>
+                    Air Conditioner
+                  </label>
+                  <label>
+                    <input type="checkbox"
+                           value="Fan" checked>
+                    Ceiling Fan
+                  </label>
+                  <label>
+                    <input type="checkbox"
+                           value="Lights" checked>
+                    Lighting
+                  </label>
+                </div>
+
+                <label class="stacked-field">
+                  Electricity Tariff <span>₹/kWh</span>
+                  <input id="weather-tariff" type="number"
+                         min="0" step="0.5" value="8">
+                </label>
+
+                <button id="weather-submit" type="submit"
+                        class="btn primary full">
+                  Get Weather Advice ↗
+                </button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Weather Intelligence</h3>
+                  <p class="muted small">Current conditions and tips</p>
+                </div>
+              </div>
+
+              <div id="weather-placeholder" class="empty-state">
+                <div class="empty-symbol">☀</div>
+                <strong>Weather insights on demand</strong>
+                <p>Enter your city to receive weather advice.</p>
+              </div>
+
+              <div id="weather-result" class="hidden"
+                   aria-live="polite">
+                <div class="weather-card">
+                  <div>
+                    <small id="weather-location">LOCAL WEATHER</small>
+                    <strong id="weather-temp">—</strong>
+                    <span id="weather-condition">Conditions</span>
+                  </div>
+                  <span class="weather-big-icon"
+                        aria-hidden="true">☀</span>
+                </div>
+
+                <div id="weather-extra" class="weather-extras"></div>
+                <h4>Personalized Energy Advice</h4>
+                <div id="weather-alerts" class="insight-list"></div>
+                <details class="raw-details">
+                  <summary>Full Agent Response</summary>
+                  <pre id="weather-json" class="json-output"></pre>
+                </details>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- 6. ENERGY COPILOT -->
+        <section class="view" id="view-copilot">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow">✳ DECISION SUPPORT</div>
+              <h1>Energy Copilot</h1>
+              <p class="subtext">
+                Tool-based recommendations from your appliance data.
+              </p>
+            </div>
+          </div>
+
+          <div class="two-column">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Ask Your Energy Assistant</h3>
+                  <p class="muted small">
+                    Transparent, calculated results
+                  </p>
+                </div>
+              </div>
+
+              <form id="copilot-form">
+                <label class="stacked-field">
+                  Your Question
+                  <textarea id="copilot-question"
+                            class="agent-textarea"
+                            maxlength="600"
+                            required>How can I reduce my electricity bill?</textarea>
+                </label>
+
+                <p class="muted small">
+                  Replace these sample inputs with actual values.
+                </p>
+
+                <div class="agent-input-grid">
+                  <label>
+                    Appliance
+                    <input id="agent-name" type="text"
+                           value="Air Conditioner" required>
+                  </label>
+                  <label>
+                    Power (W)
+                    <input id="agent-watts" type="number"
+                           min="0" value="1500" required>
+                  </label>
+                  <label>
+                    Hours/Day
+                    <input id="agent-hours" type="number"
+                           min="0" max="24" step="0.5"
+                           value="6" required>
+                  </label>
+                  <label>
+                    Quantity
+                    <input id="agent-qty" type="number"
+                           min="1" max="100" step="1"
+                           value="1" required>
+                  </label>
+                  <label>
+                    Tariff (₹/kWh)
+                    <input id="agent-tariff" type="number"
+                           min="0" step="0.5"
+                           value="8" required>
+                  </label>
+                </div>
+
+                <button id="agent-submit" type="submit"
+                        class="btn primary full">
+                  Run Decision Agent ↗
+                </button>
+              </form>
+
+              <div class="info-strip">
+                Rule-based decision support, not an autonomous
+                appliance controller.
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Agent Response</h3>
+                  <p class="muted small">
+                    Tool trace and saving scenarios
+                  </p>
+                </div>
+              </div>
+
+              <div id="agent-placeholder" class="empty-state">
+                <div class="empty-symbol">✳</div>
+                <strong>Ask a question to begin</strong>
+                <p>Your calculated response will appear here.</p>
+              </div>
+
+              <div id="agent-result" class="hidden"
+                   aria-live="polite">
+                <div class="agent-question-preview"></div>
+                <div id="agent-answer" class="agent-answer"></div>
+
+                <h4>Tools Used</h4>
+                <div id="agent-tools" class="agent-pills"></div>
+
+                <h4>Recommended Actions</h4>
+                <div id="agent-actions" class="insight-list"></div>
+
+                <h4>Calculation Assumptions</h4>
+                <p id="agent-assumptions" class="muted small"></p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- 7. ML PATTERN LAB -->
+        <section class="view" id="view-patterns">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow">⬡ UNSUPERVISED ML</div>
+              <h1>ML Pattern Lab</h1>
+              <p class="subtext">
+                Discover statistical outliers with Isolation Forest.
+              </p>
+            </div>
+          </div>
+
+          <div class="two-column">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Discover Usage Outliers</h3>
+                  <p class="muted small">
+                    Upload a compatible energy CSV
+                  </p>
+                </div>
+              </div>
+
+              <form id="patterns-form">
+                <label class="upload-zone">
+                  <span class="upload-icon">⬡</span>
+                  <strong>Select Energy CSV</strong>
+                  <span>Tap to choose file</span>
+                  <small>Minimum 50 valid readings</small>
+                  <input id="patterns-file" type="file"
+                         accept=".csv,text/csv" required>
+                </label>
+
+                <div id="patterns-filename" class="selected-file">
+                  No file selected
+                </div>
+
+                <label class="stacked-field">
+                  Contamination <span>percentage</span>
+                  <input id="patterns-contamination"
+                         type="number" min="1" max="20"
+                         step="1" value="5">
+                </label>
+
+                <button id="patterns-submit" type="submit"
+                        class="btn primary full">
+                  Run ML Pattern Analysis ↗
+                </button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>ML Discovery Report</h3>
+                  <p class="muted small">
+                    Observed statistical outliers
+                  </p>
+                </div>
+              </div>
+
+              <div id="patterns-placeholder" class="empty-state">
+                <div class="empty-symbol">⬡</div>
+                <strong>Awaiting readings</strong>
+                <p>Upload data to start pattern analysis.</p>
+              </div>
+
+              <div id="patterns-result" class="hidden"
+                   aria-live="polite">
+                <div class="result-stat-grid">
+                  <div>
+                    <small>Scanned</small>
+                    <strong id="patterns-rows">—</strong>
+                  </div>
+                  <div>
+                    <small>Outliers</small>
+                    <strong id="patterns-count">—</strong>
+                  </div>
+                  <div>
+                    <small>Typical kWh</small>
+                    <strong id="patterns-median">—</strong>
+                  </div>
+                </div>
+
+                <h4>Features Used</h4>
+                <div id="patterns-features" class="agent-pills"></div>
+                <h4>Outlier Samples</h4>
+                <div id="patterns-list" class="insight-list"></div>
+                <p id="patterns-notes" class="muted small"></p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- 8. WHAT-IF SIMULATOR -->
+        <section class="view" id="view-simulator">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow">◈ PLAN AND OPTIMIZE</div>
+              <h1>What-If Simulator</h1>
+              <p class="subtext">
+                Compare electricity costs before and after
+                reducing appliance usage.
+              </p>
+            </div>
+          </div>
+
+          <div class="two-column">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Build Your Scenario</h3>
+                  <p class="muted small">
+                    Values update as you type
+                  </p>
+                </div>
+              </div>
+
+              <label class="stacked-field">
+                Appliance Power <span>watts</span>
+                <input id="sim-watts" type="number"
+                       min="0" value="1500">
+              </label>
+
+              <label class="stacked-field">
+                Current Usage <span>hours/day</span>
+                <input id="sim-hours" type="number"
+                       min="0" max="24" step="0.5" value="8">
+              </label>
+
+              <label class="stacked-field">
+                Reduce Usage By
+                <span><strong id="sim-reduction-val">2</strong>
+                  hours/day</span>
+                <input id="sim-reduction" type="range"
+                       min="0" max="8" step="0.5" value="2">
+              </label>
+
+              <label class="stacked-field">
+                Number of Appliances <span>units</span>
+                <input id="sim-qty" type="number"
+                       min="1" max="100" value="1">
+              </label>
+
+              <label class="stacked-field">
+                Electricity Tariff <span>₹/kWh</span>
+                <input id="sim-tariff" type="number"
+                       min="0" step="0.5" value="8">
+              </label>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h3>Projected Impact</h3>
+                  <p class="muted small">30-day estimate</p>
+                </div>
+              </div>
+
+              <div class="sim-summary">
+                <div class="sim-leaf">↘</div>
+                <p>Estimated Monthly Savings</p>
+                <strong id="sim-savings">₹720</strong>
+                <span id="sim-energy">
+                  90 kWh saved per month
+                </span>
+              </div>
+
+              <div class="compare">
+                <div>
+                  <span>Before</span>
+                  <strong id="sim-before">₹2,880</strong>
+                </div>
+                <div>
+                  <span>After</span>
+                  <strong id="sim-after">₹2,160</strong>
+                </div>
+              </div>
+
+              <div class="sim-track">
+                <div id="sim-track-fill"></div>
+              </div>
+
+              <div class="info-strip">
+                Assumes constant rated power and a flat tariff.
+                Actual results may vary.
+              </div>
+            </article>
+          </div>
+        </section>
+
+      </main>
+
+      <footer class="footer">
+        <span>© WattMinds · Energy Intelligence</span>
+        <span>
+          Decision-support prototype. Anomaly flags indicate
+          unusual readings, not confirmed faults.
+        </span>
+      </footer>
     </div>
+  </div>
 
-    <!-- ========================================
-         NOTIFICATION TOAST
-    ======================================== -->
-
-    <div
-        class="toast"
-        id="toast"
-        role="status"
-        aria-live="polite"
-    ></div>
-
+  <div id="toast" class="toast" role="status"
+       aria-live="polite"></div>
 </body>
 </html>
