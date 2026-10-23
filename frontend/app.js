@@ -1,4 +1,4 @@
-
+﻿
 "use strict";
 
 /* =========================================================
@@ -744,17 +744,135 @@ function addApplianceRow(
             }
 
             row.remove();
+            syncWeatherAppliances();
         }
     );
 
     $("appliance-rows").appendChild(row);
 }
 
+/* =========================================================
+   APPLIANCE STUDIO + WEATHER ADVISOR SYNCHRONIZATION
+   ========================================================= */
+
+function getCurrentAppliances() {
+    const rows = document.querySelectorAll(
+        "#appliance-rows tr"
+    );
+
+    return Array.from(rows)
+        .map((row) => ({
+            name: row.querySelector(".app-name")?.value.trim() || "",
+            watts: Number(
+                row.querySelector(".app-watts")?.value || 0
+            ),
+            hours: Number(
+                row.querySelector(".app-hours")?.value || 0
+            ),
+            quantity: Number(
+                row.querySelector(".app-qty")?.value || 1
+            )
+        }))
+        .filter((item) => item.name.length > 0);
+}
+
+function syncWeatherAppliances() {
+    const container = document.querySelector(".check-cards");
+
+    if (!container) return;
+
+    // Remember which appliances are currently selected.
+    const previousSelections = new Map(
+        Array.from(
+            container.querySelectorAll(
+                'input[type="checkbox"]'
+            )
+        ).map((checkbox) => [
+            checkbox.value.trim().toLowerCase(),
+            checkbox.checked
+        ])
+    );
+
+    // Read appliance names from Appliance Studio.
+    const appliances = getCurrentAppliances();
+
+    // Remove duplicate appliance names.
+    const uniqueNames = [
+        ...new Map(
+            appliances.map((item) => [
+                item.name.toLowerCase(),
+                item.name
+            ])
+        ).values()
+    ];
+
+    // Rebuild the Weather Advisor appliance list.
+    container.replaceChildren();
+
+    if (uniqueNames.length === 0) {
+        const message = document.createElement("p");
+
+        message.className = "muted small";
+        message.textContent =
+            "Add appliances in Appliance Studio first.";
+
+        container.appendChild(message);
+        return;
+    }
+
+    uniqueNames.forEach((name) => {
+        const label = document.createElement("label");
+        label.className = "check-card";
+
+        const checkbox = document.createElement("input");
+
+        checkbox.type = "checkbox";
+        checkbox.name = "weather-appliances";
+        checkbox.value = name;
+
+        const key = name.toLowerCase();
+
+        checkbox.checked = previousSelections.has(key)
+            ? previousSelections.get(key)
+            : true;
+
+        const text = document.createElement("span");
+        text.textContent = name;
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+
+        container.appendChild(label);
+    });
+}
+
+// Update Weather Advisor when an appliance is edited.
+const applianceTable = document.getElementById(
+    "appliance-rows"
+);
+
+if (applianceTable) {
+    applianceTable.addEventListener(
+        "input",
+        syncWeatherAppliances
+    );
+
+    applianceTable.addEventListener(
+        "change",
+        syncWeatherAppliances
+    );
+}
+
 initialAppliances.forEach(addApplianceRow);
+
+syncWeatherAppliances();
 
 $("add-appliance").addEventListener(
     "click",
-    () => addApplianceRow()
+    () => {
+        addApplianceRow();
+        syncWeatherAppliances();
+    }
 );
 
 // Convert recommendations from different agent outputs.
@@ -2038,3 +2156,4 @@ updateHealth();
 console.info(
     "WattMinds 2.0 dashboard initialized."
 );
+
