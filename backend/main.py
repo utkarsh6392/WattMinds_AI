@@ -1053,7 +1053,7 @@ def demo_data():
 @app.get("/")
 def index():
     return FileResponse(
-        FRONTEND / "indexwatt.html"
+        FRONTEND / "index.html"
     )
 
 
