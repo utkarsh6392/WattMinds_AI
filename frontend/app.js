@@ -145,18 +145,215 @@ const initialAppliances = [
   {name:'Refrigerator',watts:200,hours:8,quantity:1},
   {name:'LED Bulb',watts:9,hours:6,quantity:4},
 ];
-function addApplianceRow(row = {name:'',watts:100,hours:4,quantity:1}) {
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td><input class="app-name" placeholder="Appliance" value="${safe(row.name)}" required></td><td><input class="app-watts" type="number" min="0" step="any" value="${Number(row.watts)}" required></td><td><input class="app-hours" type="number" min="0" max="24" step="any" value="${Number(row.hours)}" required></td><td><input class="app-qty" type="number" min="1" max="100" value="${Number(row.quantity)}" required></td><td><button class="delete-row" type="button" title="Remove appliance">×</button></td>`;
-  tr.querySelector('button').addEventListener('click', () => {
-    if ($('appliance-rows').children.length <= 1) return toast('Keep at least one appliance.',true);
-    tr.remove();
-  });
-  $('appliance-rows').appendChild(tr);
+function addApplianceRow(
+    item = {
+        name: "",
+        watts: 100,
+        hours: 4,
+        quantity: 1
+    }
+) {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+        <td>
+            <input
+                class="app-name"
+                value="${safe(item.name)}"
+                placeholder="Appliance"
+                required
+            >
+        </td>
+
+        <td>
+            <input
+                class="app-watts"
+                type="number"
+                min="0"
+                step="any"
+                value="${Number(item.watts)}"
+                required
+            >
+        </td>
+
+        <td>
+            <input
+                class="app-hours"
+                type="number"
+                min="0"
+                max="24"
+                step="any"
+                value="${Number(item.hours)}"
+                required
+            >
+        </td>
+
+        <td>
+            <input
+                class="app-qty"
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                value="${Number(item.quantity)}"
+                required
+            >
+        </td>
+
+        <td>
+            <button
+                type="button"
+                class="delete-row"
+                aria-label="Remove appliance"
+            >
+                ×
+            </button>
+        </td>
+    `;
+
+    row.querySelector(".delete-row").addEventListener(
+        "click",
+        () => {
+            const rows = $("appliance-rows");
+
+            if (rows.children.length <= 1) {
+                toast(
+                    "Keep at least one appliance.",
+                    true
+                );
+                return;
+            }
+
+            row.remove();
+            syncWeatherAppliances();
+        }
+    );
+
+    $("appliance-rows").appendChild(row);
+}
+
+/* =========================================================
+   APPLIANCE STUDIO + WEATHER ADVISOR SYNCHRONIZATION
+   ========================================================= */
+
+function getCurrentAppliances() {
+    const rows = document.querySelectorAll(
+        "#appliance-rows tr"
+    );
+
+    return Array.from(rows)
+        .map((row) => ({
+            name: row.querySelector(".app-name")?.value.trim() || "",
+            watts: Number(
+                row.querySelector(".app-watts")?.value || 0
+            ),
+            hours: Number(
+                row.querySelector(".app-hours")?.value || 0
+            ),
+            quantity: Number(
+                row.querySelector(".app-qty")?.value || 1
+            )
+        }))
+        .filter((item) => item.name.length > 0);
+}
+
+function syncWeatherAppliances() {
+    const container = document.querySelector(".check-cards");
+
+    if (!container) return;
+
+    // Remember which appliances are currently selected.
+    const previousSelections = new Map(
+        Array.from(
+            container.querySelectorAll(
+                'input[type="checkbox"]'
+            )
+        ).map((checkbox) => [
+            checkbox.value.trim().toLowerCase(),
+            checkbox.checked
+        ])
+    );
+
+    // Read appliance names from Appliance Studio.
+    const appliances = getCurrentAppliances();
+
+    // Remove duplicate appliance names.
+    const uniqueNames = [
+        ...new Map(
+            appliances.map((item) => [
+                item.name.toLowerCase(),
+                item.name
+            ])
+        ).values()
+    ];
+
+    // Rebuild the Weather Advisor appliance list.
+    container.replaceChildren();
+
+    if (uniqueNames.length === 0) {
+        const message = document.createElement("p");
+
+        message.className = "muted small";
+        message.textContent =
+            "Add appliances in Appliance Studio first.";
+
+        container.appendChild(message);
+        return;
+    }
+
+    uniqueNames.forEach((name) => {
+        const label = document.createElement("label");
+        label.className = "check-card";
+
+        const checkbox = document.createElement("input");
+
+        checkbox.type = "checkbox";
+        checkbox.name = "weather-appliances";
+        checkbox.value = name;
+
+        const key = name.toLowerCase();
+
+        checkbox.checked = previousSelections.has(key)
+            ? previousSelections.get(key)
+            : true;
+
+        const text = document.createElement("span");
+        text.textContent = name;
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+
+        container.appendChild(label);
+    });
+}
+
+// Update Weather Advisor when an appliance is edited.
+const applianceTable = document.getElementById(
+    "appliance-rows"
+);
+
+if (applianceTable) {
+    applianceTable.addEventListener(
+        "input",
+        syncWeatherAppliances
+    );
+
+    applianceTable.addEventListener(
+        "change",
+        syncWeatherAppliances
+    );
 }
 initialAppliances.forEach(addApplianceRow);
-$('add-appliance').addEventListener('click', () => addApplianceRow());
+syncWeatherAppliances();
 
+$("add-appliance").addEventListener(
+    "click",
+    () => {
+        addApplianceRow();
+        syncWeatherAppliances();
+    }
+);
+// Convert recommendations from different agent outputs.
 function toAdviceList(raw) {
   if (raw === null || raw === undefined) return [];
   if (Array.isArray(raw)) return raw.flatMap(toAdviceList).slice(0, 12);
@@ -332,7 +529,6 @@ navigate($('view-' + initialView) ? initialView : 'overview');
 requestAnimationFrame(drawChart);
 updateHealth();
 
-
 // Energy Copilot: calculated, transparent tool-based assistant.
 $('copilot-form').addEventListener('submit', event => {
   event.preventDefault();
@@ -383,3 +579,6 @@ new MutationObserver(() => {
     updateHealth();
   }
 }).observe(document.body, {attributes: true, attributeFilter: ['class']});
+console.info(
+    "WattMinds 2.0 dashboard initialized."
+);
