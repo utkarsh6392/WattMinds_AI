@@ -1,4 +1,3 @@
-
 """
 WattMinds 2.0 — FastAPI Backend
 
@@ -41,7 +40,7 @@ from fastapi import (
 )
 
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from pydantic import BaseModel, Field
@@ -991,13 +990,70 @@ async def ml_patterns(
 
 
 # =========================================================
+# 13b. DEMO CSV DOWNLOAD (PUBLIC, SYNTHETIC DATA)
+# =========================================================
+
+@app.get("/api/demo-data")
+def demo_data():
+    """
+    Download a synthetic hourly CSV for trying the app.
+
+    Public on purpose: the frontend links to it with a plain
+    <a download> tag, which cannot send an Authorization header.
+    The data is generated here and contains nothing private.
+    """
+
+    rng = np.random.default_rng(42)
+
+    hours = pd.date_range(
+        "2025-01-01",
+        periods=14 * 24,
+        freq="h"
+    )
+
+    # Typical household day: low overnight, morning bump, evening peak.
+    profile = np.array([
+        0.45, 0.42, 0.38, 0.35, 0.33, 0.42, 0.71, 1.10,
+        0.90, 0.79, 0.74, 0.82, 0.88, 0.94, 1.13, 1.26,
+        1.16, 1.38, 1.48, 1.52, 1.72, 1.61, 1.13, 0.68,
+    ])
+
+    energy = profile[hours.hour] * np.where(
+        hours.dayofweek >= 5,
+        1.12,
+        1.0
+    )
+
+    energy = energy * rng.normal(1.0, 0.08, len(hours))
+
+    # A few obvious spikes and dips so the anomaly tools have
+    # something to find.
+    for position, factor in ((60, 3.2), (130, 3.6), (205, 0.1), (290, 3.0)):
+        energy[position] *= factor
+
+    frame = pd.DataFrame({
+        "Hour": hours.strftime("%Y-%m-%d %H:%M:%S"),
+        "Energy_kWh": np.round(np.clip(energy, 0.02, None), 3),
+    })
+
+    return Response(
+        content=frame.to_csv(index=False),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition":
+                'attachment; filename="wattminds_demo.csv"'
+        },
+    )
+
+
+# =========================================================
 # 14. SERVE THE FRONTEND
 # =========================================================
 
 @app.get("/")
 def index():
     return FileResponse(
-        FRONTEND / "index.html"
+        FRONTEND / "indexwatt.html"
     )
 
 
