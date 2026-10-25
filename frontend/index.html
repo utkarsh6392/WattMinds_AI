@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap">
-  <link rel="stylesheet" href="/styles.css?v=bento2">
+  <link rel="stylesheet" href="/styles.css?v=bento3">
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script defer src="/auth.js?v=bento2"></script>
-  <script defer src="/app.js?v=bento2"></script>
+  <script defer src="/app.js?v=bento3"></script>
 </head>
 <body class="auth-loading">
   <div class="auth-boot" aria-label="Loading"><span class="auth-spinner"></span></div>
@@ -86,6 +86,7 @@
         <button class="nav-item" data-view="copilot"><span class="nav-icon">✳</span> Energy Copilot</button>
         <button class="nav-item" data-view="patterns"><span class="nav-icon">⬡</span> ML Pattern Lab</button>
         <button class="nav-item" data-view="simulator"><span class="nav-icon">◈</span> What-If Simulator</button>
+        <button class="nav-item" data-view="replacements"><span class="nav-icon">↻</span> Replacement Advisor</button>
       </nav>
       <p class="nav-eyebrow second">System</p>
       <div class="system-mini"><span class="live-dot" id="sidebar-status-dot"></span><div><strong id="sidebar-status">Checking API...</strong><small>FastAPI connection</small></div></div>
@@ -143,6 +144,46 @@
           <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> Unsupervised ML</div><h1>ML Pattern Lab <span class="heading-spark">⬡</span></h1><p class="subtext">Discover statistically unusual readings using Isolation Forest, separate from your existing forecasting model.</p></div><span class="page-ornament">⬡</span></div>
           <div class="two-column"><article class="panel"><div class="panel-heading"><div><h3>Discover usage outliers</h3><p class="muted small">Fits a temporary ML model to each uploaded CSV</p></div></div><form id="patterns-form"><label class="upload-zone"><span class="upload-icon">⬡</span><strong>Select energy CSV</strong><span>Requires Energy_kWh column</span><small>Minimum 50 readings · max 15 MB</small><input type="file" id="patterns-file" accept=".csv,text/csv" required></label><div id="patterns-filename" class="selected-file">No file selected</div><label class="stacked-field">Expected outlier proportion <span>1–20%</span><input id="patterns-contamination" type="number" value="5" min="1" max="20" step="1"></label><button class="btn primary full" type="submit" id="patterns-submit">⬡ Analyze with Isolation Forest <span>↗</span></button></form><div class="info-strip">ⓘ The specified outlier fraction influences the output. An ML anomaly does not prove theft, waste or equipment failure.</div></article>
           <article class="panel"><div class="panel-heading"><div><h3>ML discovery report</h3><p class="muted small">Model details, counts and high-scoring cases</p></div></div><div class="empty-state" id="patterns-placeholder"><div class="empty-symbol">⬡</div><strong>Awaiting historical readings</strong><p>Upload your CSV to inspect unusual usage patterns.</p></div><div id="patterns-result" class="hidden"><div class="result-stat-grid"><div><small>Scanned</small><strong id="patterns-rows">—</strong></div><div><small>ML Outliers</small><strong id="patterns-count">—</strong></div><div><small>Typical kWh</small><strong id="patterns-median">—</strong></div></div><div class="agent-pills" id="patterns-features"></div><h4>Highest-scoring outlier samples</h4><div id="patterns-list" class="insight-list"></div><p id="patterns-notes" class="muted small"></p></div></article></div>
+        </section>
+        <section class="view" id="view-replacements">
+          <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> Upgrade planner</div><h1>Replacement Advisor</h1><p class="subtext">Find which appliances are worth replacing, what to replace them with, and how quickly each upgrade pays for itself.</p></div><span class="page-ornament">↻</span></div>
+          <div class="two-column">
+            <article class="panel">
+              <div class="panel-heading"><div><h3>Your appliances</h3><p class="muted small">Enter each appliance as it is today</p></div><button class="btn small" type="button" id="repl-import">Use my Appliance Studio list</button></div>
+              <form id="repl-form" novalidate>
+                <div class="table-scroll repl-scroll" role="region" aria-label="Appliance table (scrolls sideways on small screens)" tabindex="0">
+                  <table class="input-table repl-table" id="repl-table">
+                    <caption class="sr-only">Appliances to evaluate for replacement</caption>
+                    <thead><tr><th scope="col">Appliance</th><th scope="col">Type</th><th scope="col">Watts</th><th scope="col">Hrs/day</th><th scope="col">Qty</th><th scope="col">Age <small>(yrs)</small></th><th scope="col" class="adv-col">New watts</th><th scope="col" class="adv-col">New price ₹</th><th scope="col"><span class="sr-only">Remove</span></th></tr></thead>
+                    <tbody id="repl-rows"></tbody>
+                  </table>
+                </div>
+                <button class="text-action" type="button" id="repl-add">＋ Add appliance</button>
+                <details class="raw-details repl-advanced" id="repl-advanced"><summary>Advanced: use my own replacement quotes</summary><p class="muted small">Adds two columns to the table. Enter the watts and price from a real quote. Leave a cell blank to use the typical value.</p></details>
+                <label class="stacked-field repl-tariff">Electricity tariff <span>₹ per kWh</span><input id="repl-tariff" type="number" min="0.1" max="1000" step="0.5" value="8" required></label>
+                <button class="btn primary full" type="submit" id="repl-submit">Find replacements <span>↗</span></button>
+                <p class="muted small repl-status" id="repl-status" role="status" aria-live="polite"></p>
+              </form>
+              <div class="info-strip">ⓘ &nbsp; Replacement prices and wattages are typical estimates. Enter real quotes for accurate payback.</div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading"><div><h3>Replacement plan</h3><p class="muted small">Ranked by yearly saving</p></div></div>
+              <div class="empty-state" id="repl-placeholder"><div class="empty-symbol">↻</div><strong>Your plan will appear here</strong><p>Enter your appliances and select Find replacements to see what to upgrade first.</p></div>
+              <div id="repl-result" class="hidden">
+                <div class="result-stat-grid repl-stats">
+                  <div><small>Yearly saving</small><strong id="repl-total-year">—</strong></div>
+                  <div><small>Total investment</small><strong id="repl-total-invest">—</strong></div>
+                  <div><small>Overall payback</small><strong id="repl-payback">—</strong><span class="muted small" id="repl-payback-sub"></span></div>
+                  <div><small>Energy saved / year</small><strong id="repl-kwh-year">—</strong></div>
+                </div>
+                <h4>Recommended replacements</h4>
+                <div class="repl-cards" id="repl-cards"></div>
+                <div id="repl-efficient-wrap" class="hidden"><h4>Already efficient</h4><div class="repl-muted-list" id="repl-efficient"></div></div>
+                <div id="repl-skipped-wrap" class="hidden"><h4>Not assessed</h4><div class="repl-muted-list" id="repl-skipped"></div></div>
+                <div class="info-strip repl-assumptions" id="repl-assumptions"></div>
+              </div>
+            </article>
+          </div>
         </section>
       </main>
       <footer class="footer"><span>© WattMinds 2.0 — Smarter energy decisions</span><span>Decision-support prototype. Anomaly flags indicate unusual readings, not confirmed faults.</span></footer>

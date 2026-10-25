@@ -16,7 +16,7 @@ The platform combines a modern, responsive dashboard with a Python FastAPI backe
 
 ## Key Features
 
-WattMinds provides eight integrated modules:
+WattMinds provides nine integrated modules:
 
 | Module | Description |
 |---|---|
@@ -28,6 +28,7 @@ WattMinds provides eight integrated modules:
 | Energy Copilot | Ask energy-related questions and receive calculation-based insights and recommendations |
 | ML Pattern Lab | Explore unusual consumption patterns using Isolation Forest |
 | What-If Simulator | Explore how changes in appliance usage could affect energy consumption and costs |
+| Replacement Advisor | Find which appliances are worth replacing, with what, and how much money and energy that saves |
 
 ### Authentication
 
@@ -80,10 +81,15 @@ WattMinds/
 │   ├── energy_agent.py
 │   ├── manual_energy_agent.py
 │   ├── weather_energy_agent.py
-│   └── anomaly_detector.py
+│   ├── anomaly_detector.py
+│   └── replacement_advisor.py
 │
 ├── models/
 │   └── final_energy_prediction_model.joblib
+│
+├── tests/
+│   ├── test_replacement_advisor.py
+│   └── test_api_replacements.py
 │
 ├── requirements-web.txt
 ├── .gitignore
@@ -197,6 +203,8 @@ http://127.0.0.1:8000/docs
 | POST | `/api/weather` | Generate weather-aware energy recommendations |
 | POST | `/api/copilot` | Process energy-related questions |
 | POST | `/api/ml-patterns` | Detect unusual consumption patterns using machine learning |
+| GET | `/api/replacement-types` | Appliance types for the Replacement Advisor dropdown |
+| POST | `/api/replacements` | Recommend appliance replacements with savings and payback |
 
 Protected API endpoints require a valid Supabase access token.
 
@@ -254,6 +262,77 @@ Uses Isolation Forest to detect statistical outliers in energy-consumption datas
 Provides appliance-level calculations, estimated electricity costs, and potential energy-saving suggestions.
 
 **Important:** Machine learning outputs are estimates and should not be treated as guaranteed electricity savings or utility-billing measurements.
+
+## Replacement Advisor
+
+The Replacement Advisor recommends which of your appliances to replace, with what type of appliance, and shows the energy and money saved and how long the upgrade takes to pay for itself.
+
+**Example output:** "Replace Old tube light (40 W) with LED batten (20 W). You save 0.48 kWh per day, about Rs 1,402 per year. The replacement costs about Rs 1,800 (4 x Rs 450), so it pays for itself in roughly 15.6 months."
+
+### How to use it
+
+1. Open **Replacement Advisor** in the sidebar.
+2. Enter your appliances (name, type, watts, hours per day, quantity, optional age), or select **Use my Appliance Studio list** to copy the rows you already entered there.
+3. Leave the type on **Auto-detect from name**, or pick it from the list.
+4. Set your tariff and select **Find replacements**.
+5. Optional: open **Advanced** and enter the watts and price from a real quote.
+
+### Formulas
+
+Per appliance, using **your entered watts** as the old appliance's power:
+
+```text
+kwh_saved_per_day      = (old_watts - new_watts) x hours_per_day x quantity / 1000
+monthly_saving_rs      = kwh_saved_per_day x 30  x tariff
+yearly_saving_rs       = kwh_saved_per_day x 365 x tariff
+total_replacement_cost = replacement price x quantity
+payback_months         = total_replacement_cost / monthly_saving_rs
+```
+
+Priority: **High** = payback under 12 months, **Medium** = 12 to 36 months, **Low** = more than 36 months. An appliance whose wattage is within 10% of the replacement's (or below it) is listed as **already efficient** and is not recommended for replacement. Appliances that cannot be matched to a type, or that are used 0 hours a day, are listed under **Not assessed** with the reason.
+
+### Assumptions
+
+- Rated power for the hours entered, a 30-day month, a 365-day year and a flat tariff.
+- Catalog wattages and prices are **indicative estimates for India**, not quotes. Enter real quotes under Advanced for an accurate payback.
+- Payback ignores installation charges, resale value, subsidies and price changes.
+- For refrigerators and air conditioners the replacement wattage is an average running power, so enter the hours the compressor actually runs, as in Appliance Studio.
+
+### Replacement catalog (typical values)
+
+| Old appliance | Replace with | Typical watts | Typical price (Rs) |
+|---|---|---|---|
+| Incandescent bulb | LED bulb | 9 W | 100 |
+| CFL | LED bulb | 9 W | 100 |
+| Tube light (T12 / T8) | LED batten | 20 W | 450 |
+| Old ceiling fan | BLDC ceiling fan | 30 W | 3,200 |
+| Old non-inverter AC | 5-star inverter AC | 950 W | 42,000 |
+| Old refrigerator | 5-star inverter refrigerator | 100 W | 28,000 |
+| CRT TV | LED TV | 40 W | 14,000 |
+| Old desktop computer | Energy-efficient laptop | 45 W | 45,000 |
+| CRT monitor | LED monitor | 20 W | 7,000 |
+| Electric water heater (geyser) | 5-star geyser | 1,700 W | 9,000 |
+| Old water pump / motor | Energy-efficient pump | 600 W | 12,000 |
+
+To change a price or add an appliance type, edit the `CATALOG` list at the top of `src/replacement_advisor.py`. Nothing else needs to change.
+
+### API
+
+Both endpoints require a valid Supabase access token, like the other analysis endpoints.
+
+- `GET /api/replacement-types` returns `{"types": [...]}` for the dropdown.
+- `POST /api/replacements` takes `{"appliances": [{"name", "type_key", "watts", "hours_per_day", "quantity", "age_years", "replacement_watts", "replacement_cost_rs"}], "tariff": 8}` and returns `{"status": "success", "result": {"recommendations", "already_efficient", "not_assessed", "summary", "assumptions"}}`. `type_key`, `age_years` and the two replacement fields are optional.
+
+### Energy Copilot
+
+Questions such as "Which appliance should I replace?" or "Should I buy an LED?" are answered with the same calculation, using the appliance entered in the Copilot form.
+
+### Tests
+
+```bash
+python -m pip install httpx      # only needed for the API tests
+python -m unittest discover -s tests -v
+```
 
 ---
 
