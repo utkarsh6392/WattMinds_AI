@@ -10,6 +10,7 @@ Features:
 - Appliance energy calculations
 - Weather-aware recommendations
 - Rule-based Energy Copilot
+- Replacement Advisor (which appliances to upgrade, savings, payback)
 - Frontend static file serving
 """
 
@@ -241,6 +242,36 @@ class CopilotRequest(BaseModel):
         default_factory=list
     )
     tariff: float = Field(default=8, ge=0)
+
+
+# =========================================================
+# 4b. REPLACEMENT ADVISOR REQUEST MODELS
+# =========================================================
+
+class ReplacementAppliance(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    # Catalog type key (see GET /api/replacement-types). Leave empty to let
+    # the advisor guess the type from the appliance name.
+    type_key: str | None = Field(default=None, max_length=40)
+    watts: float = Field(ge=0, le=50000)
+    hours_per_day: float = Field(ge=0, le=24)
+    quantity: int = Field(default=1, ge=1, le=100)
+    age_years: float | None = Field(default=None, ge=0, le=100)
+    # Optional real quotes that replace the catalog's typical values.
+    replacement_watts: float | None = Field(default=None, ge=0, le=50000)
+    replacement_cost_rs: float | None = Field(
+        default=None,
+        ge=0,
+        le=10_000_000
+    )
+
+
+class ReplacementRequest(BaseModel):
+    appliances: list[ReplacementAppliance] = Field(
+        min_length=1,
+        max_length=50
+    )
+    tariff: float = Field(default=8, ge=0, le=1000)
 
 
 # =========================================================
@@ -687,7 +718,47 @@ def energy_copilot(request: CopilotRequest):
         "ज्यादा"
     )
 
-    if any(
+    # Questions such as "which appliance should I replace?" are answered
+    # by the Replacement Advisor, using the appliances entered above.
+    replacement_actions = []
+
+    from replacement_advisor import (
+        copilot_replacement_answer,
+        is_replacement_question,
+        recommend_replacements,
+    )
+
+    if is_replacement_question(question):
+
+        tools_used.append(
+            "replacement_advisor"
+        )
+
+        try:
+            advice = recommend_replacements(
+                [
+                    {
+                        "name": appliance.name,
+                        "watts": appliance.watts,
+                        "hours_per_day": appliance.hours,
+                        "quantity": appliance.quantity,
+                    }
+                    for appliance in request.appliances
+                ],
+                request.tariff
+            )
+
+            answer, replacement_actions = (
+                copilot_replacement_answer(advice)
+            )
+
+        except ValueError as error:
+            answer = (
+                "I could not check replacements: "
+                f"{error}"
+            )
+
+    elif any(
         word in question
         for word in saving_keywords
     ):
@@ -785,6 +856,7 @@ def energy_copilot(request: CopilotRequest):
             ),
             "appliance_breakdown": readings,
             "actions": actions,
+            "replacement_actions": replacement_actions,
             "assumptions": (
                 "Rated power is constant, 30 days, "
                 "flat tariff; no real-time metering."
@@ -986,6 +1058,69 @@ async def ml_patterns(
         raise HTTPException(
             status_code=422,
             detail=f"ML pattern error: {error}"
+        ) from error
+
+
+# =========================================================
+# 13a. REPLACEMENT ADVISOR
+# =========================================================
+
+@app.get(
+    "/api/replacement-types",
+    dependencies=[Depends(require_user)]
+)
+def replacement_types():
+    """
+    Appliance types for the Replacement Advisor dropdown.
+
+    Protected like the other analysis endpoints for consistency,
+    even though the catalog itself is not private.
+    """
+
+    from replacement_advisor import list_replacement_types
+
+    return {
+        "status": "success",
+        "types": list_replacement_types()
+    }
+
+
+@app.post(
+    "/api/replacements",
+    dependencies=[Depends(require_user)]
+)
+def replacement_analysis(request: ReplacementRequest):
+    """
+    Recommend which appliances to replace, with what, and the
+    energy / money saved and payback period.
+    """
+
+    from replacement_advisor import recommend_replacements
+
+    try:
+        appliances = [
+            (
+                item.model_dump()
+                if hasattr(item, "model_dump")
+                else item.dict()
+            )
+            for item in request.appliances
+        ]
+
+        result = recommend_replacements(
+            appliances,
+            request.tariff
+        )
+
+        return {
+            "status": "success",
+            "result": safe_value(result)
+        }
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Replacement analysis error: {error}"
         ) from error
 
 

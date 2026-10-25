@@ -351,6 +351,7 @@ $('copilot-form').addEventListener('submit', event => {
     $('agent-tools').innerHTML=(r.tools_used||[]).map(t=>`<span class="agent-pill">↗ ${safe(t.replaceAll('_',' '))}</span>`).join('') || '<span class="muted">No tools needed</span>';
     $('agent-actions').innerHTML=(r.actions||[]).map(x=>`<div class="agent-action"><strong>${safe(x.appliance)}</strong><span>Reduce ${number(x.reduction_hours_per_day,1)} h/day → ${money(x.monthly_inr_saved)}/month (estimate)</span></div>`).join('') || '<p class="muted small">Ask for saving suggestions to generate scenarios.</p>';
     $('agent-assumptions').textContent=r.assumptions||'';
+    renderCopilotReplacements(r);
     toast('Energy decision engine completed.');
   });
 });
@@ -383,3 +384,227 @@ new MutationObserver(() => {
     updateHealth();
   }
 }).observe(document.body, {attributes: true, attributeFilter: ['class']});
+
+
+/* ==========================================================================
+   REPLACEMENT ADVISOR
+   Appended to app.js. Reuses $, api, withLoading, toast, navigate, safe,
+   money, number and numeric from above; nothing above was renamed.
+   API: GET /api/replacement-types, POST /api/replacements (both need login;
+   api() attaches the Supabase token).
+   ========================================================================== */
+let replTypes = [];
+let replTypesState = 'idle'; // idle | loading | ready
+
+const replSampleRows = [
+  {name: 'Old tube light', type: 'tube_light', watts: 40, hours: 6, quantity: 4},
+  {name: 'Ceiling fan', type: 'ceiling_fan', watts: 75, hours: 10, quantity: 3},
+  {name: 'Bedroom bulb', type: 'incandescent_bulb', watts: 60, hours: 5, quantity: 2},
+];
+
+function replTypeOptions(selected) {
+  return ['<option value="">Auto-detect from name</option>'].concat(
+    replTypes.map(t => `<option value="${safe(t.type_key)}"${t.type_key === selected ? ' selected' : ''}>${safe(t.label)}</option>`)
+  ).join('');
+}
+
+function replFmtPayback(months) {
+  const m = numeric(months);
+  if (m === null) return '—';
+  return m < 24 ? number(m, 1) + ' months' : number(m / 12, 1) + ' years';
+}
+
+// Placeholders show the typical values for the chosen type, so users know what a "quote" is compared with.
+function updateReplRowHints(tr) {
+  const type = replTypes.find(t => t.type_key === tr.dataset.type);
+  const range = type && Array.isArray(type.typical_old_watts) ? number(type.typical_old_watts[0], 0) + '–' + number(type.typical_old_watts[1], 0) : '';
+  tr.querySelector('.repl-watts').placeholder = range || 'Watts';
+  tr.querySelector('.repl-new-watts').placeholder = type ? String(type.replacement_watts) : 'Typical';
+  tr.querySelector('.repl-new-cost').placeholder = type ? String(type.replacement_cost_rs) : 'Typical';
+  tr.querySelector('.repl-type').title = type
+    ? 'Recommended: ' + type.replacement + ' (about ' + type.replacement_watts + ' W, about ₹' + number(type.replacement_cost_rs, 0) + ' each)'
+    : 'The type is guessed from the appliance name';
+}
+
+function addReplRow(row = {}, focus = false) {
+  const tr = document.createElement('tr');
+  tr.dataset.type = row.type || '';
+  tr.innerHTML = `<td><input class="repl-name" aria-label="Appliance name" placeholder="e.g. Bedroom fan" maxlength="80" value="${safe(row.name ?? '')}"></td>`
+    + `<td><select class="repl-type" aria-label="Appliance type">${replTypeOptions(tr.dataset.type)}</select></td>`
+    + `<td><input class="repl-watts" type="number" min="0" step="any" aria-label="Rated watts" value="${row.watts ?? ''}"></td>`
+    + `<td><input class="repl-hours" type="number" min="0" max="24" step="any" aria-label="Hours used per day" value="${row.hours ?? ''}"></td>`
+    + `<td><input class="repl-qty" type="number" min="1" max="100" step="1" aria-label="Quantity" value="${row.quantity ?? 1}"></td>`
+    + `<td><input class="repl-age" type="number" min="0" max="100" step="any" aria-label="Age in years (optional)" value="${row.age ?? ''}"></td>`
+    + `<td class="adv-col"><input class="repl-new-watts" type="number" min="0" step="any" aria-label="Replacement watts from your quote (optional)"></td>`
+    + `<td class="adv-col"><input class="repl-new-cost" type="number" min="0" step="any" aria-label="Replacement price in rupees from your quote (optional)"></td>`
+    + `<td><button class="delete-row" type="button" aria-label="Remove this appliance" title="Remove appliance">×</button></td>`;
+  tr.querySelector('.repl-type').addEventListener('change', e => { tr.dataset.type = e.target.value; updateReplRowHints(tr); });
+  tr.querySelector('.delete-row').addEventListener('click', () => {
+    if ($('repl-rows').children.length <= 1) return toast('Keep at least one appliance.', true);
+    tr.remove();
+  });
+  $('repl-rows').appendChild(tr);
+  updateReplRowHints(tr);
+  if (focus) tr.querySelector('.repl-name').focus();
+}
+
+function applyReplTypes() {
+  $('repl-rows').querySelectorAll('tr').forEach(tr => {
+    tr.querySelector('.repl-type').innerHTML = replTypeOptions(tr.dataset.type);
+    updateReplRowHints(tr);
+  });
+}
+
+async function loadReplTypes() {
+  // Only ask the server once signed in, so there is never a pointless 401.
+  if (replTypesState !== 'idle' || !document.body.classList.contains('authenticated')) return;
+  replTypesState = 'loading';
+  try {
+    const output = await api('replacement-types');
+    replTypes = Array.isArray(output.types) ? output.types : [];
+    replTypesState = 'ready';
+    $('repl-status').textContent = '';
+    applyReplTypes();
+  } catch (error) {
+    replTypesState = 'idle';
+    $('repl-status').textContent = 'Appliance types could not be loaded (' + error.message + '). "Auto-detect from name" still works.';
+  }
+}
+
+function importReplFromStudio() {
+  const rows = [...$('appliance-rows').querySelectorAll('tr')].map(tr => ({
+    name: tr.querySelector('.app-name').value.trim(),
+    watts: numeric(tr.querySelector('.app-watts').value),
+    hours: numeric(tr.querySelector('.app-hours').value),
+    quantity: numeric(tr.querySelector('.app-qty').value) ?? 1,
+  })).filter(r => r.name);
+  if (!rows.length) return toast('Appliance Studio has no appliances yet. Add some there, or enter them here.', true);
+  $('repl-rows').innerHTML = '';
+  rows.forEach(r => addReplRow(r));
+  toast('Copied ' + rows.length + ' appliance' + (rows.length === 1 ? '' : 's') + ' from Appliance Studio. Check the Type column.');
+}
+
+function collectReplPayload() {
+  const rows = [...$('repl-rows').querySelectorAll('tr')];
+  document.querySelectorAll('#view-replacements [aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
+  if (!rows.length) throw new Error('Add at least one appliance.');
+  const fail = (el, message) => { el.setAttribute('aria-invalid', 'true'); el.focus(); throw new Error(message); };
+  const useQuotes = $('repl-advanced').open;
+  const appliances = rows.map((tr, i) => {
+    const at = 'Row ' + (i + 1) + ': ';
+    const el = (cls) => tr.querySelector(cls);
+    const name = el('.repl-name').value.trim();
+    if (!name) fail(el('.repl-name'), at + 'enter an appliance name.');
+    const watts = numeric(el('.repl-watts').value);
+    if (watts === null || watts <= 0) fail(el('.repl-watts'), at + 'enter the rated watts (more than 0).');
+    const hours = numeric(el('.repl-hours').value);
+    if (hours === null || hours < 0 || hours > 24) fail(el('.repl-hours'), at + 'hours per day must be between 0 and 24.');
+    const quantity = numeric(el('.repl-qty').value);
+    if (quantity === null || !Number.isInteger(quantity) || quantity < 1 || quantity > 100) fail(el('.repl-qty'), at + 'quantity must be a whole number from 1 to 100.');
+    const age = numeric(el('.repl-age').value);
+    if (el('.repl-age').value.trim() !== '' && (age === null || age < 0 || age > 100)) fail(el('.repl-age'), at + 'age must be between 0 and 100 years.');
+    let newWatts = null, newCost = null;
+    if (useQuotes) {
+      newWatts = numeric(el('.repl-new-watts').value);
+      if (el('.repl-new-watts').value.trim() !== '' && (newWatts === null || newWatts <= 0)) fail(el('.repl-new-watts'), at + 'replacement watts must be more than 0.');
+      newCost = numeric(el('.repl-new-cost').value);
+      if (el('.repl-new-cost').value.trim() !== '' && (newCost === null || newCost < 0)) fail(el('.repl-new-cost'), at + 'replacement price cannot be negative.');
+    }
+    return {name, type_key: tr.dataset.type || null, watts, hours_per_day: hours, quantity, age_years: age,
+            replacement_watts: newWatts, replacement_cost_rs: newCost};
+  });
+  const tariff = numeric($('repl-tariff').value);
+  if (tariff === null || tariff <= 0 || tariff > 1000) fail($('repl-tariff'), 'Enter your tariff in ₹ per kWh (more than 0).');
+  return {appliances, tariff};
+}
+
+function replCardHtml(r) {
+  const priority = String(r.priority || 'Low');
+  const share = Math.max(0, Math.min(100, Number(r.share_of_savings_pct) || 0));
+  const rep = r.replacement || {};
+  const meta = [
+    r.quantity + ' × ' + number(r.hours_per_day, 1) + ' h/day',
+    (r.type_label || '') + (r.auto_detected ? ' (auto-detected)' : ''),
+    'price: ' + (rep.cost_source || 'catalog estimate'),
+  ].filter(Boolean).join(' · ');
+  const notes = (r.notes || []).map(n => `<p class="repl-note">${safe(n)}</p>`).join('');
+  const warnings = (r.warnings || []).map(w => `<p class="repl-note repl-warn">⚠ ${safe(w)}</p>`).join('');
+  return `<article class="repl-card">`
+    + `<div class="repl-card-head"><h5 class="repl-headline">${safe(r.headline)}</h5><span class="priority-badge ${safe(priority.toLowerCase())}">${safe(priority)} priority</span></div>`
+    + `<p class="repl-detail">${safe(r.detail)}</p>`
+    + `<dl class="repl-facts">`
+    + `<div><dt>Saves per day</dt><dd>${number(r.kwh_saved_per_day, 2)} kWh</dd></div>`
+    + `<div><dt>Saves per month</dt><dd>${money(r.monthly_saving_rs)}</dd></div>`
+    + `<div><dt>Saves per year</dt><dd>${money(r.yearly_saving_rs)}</dd></div>`
+    + `<div><dt>Replacement cost</dt><dd>${money(r.total_replacement_cost_rs)}</dd></div>`
+    + `<div><dt>Payback</dt><dd>${safe(replFmtPayback(r.payback_months))}</dd></div>`
+    + `</dl>`
+    + `<div><div class="breakdown-row-head"><span>Share of total savings</span><strong>${number(share, 1)}%</strong></div><div class="bar-track"><div class="bar-fill" style="width:${share.toFixed(1)}%"></div></div></div>`
+    + `<p class="repl-note">${safe(meta)}</p>${notes}${warnings}</article>`;
+}
+
+function replMutedItem(x, mark) {
+  return `<div class="repl-muted-item"><span class="repl-mark" aria-hidden="true">${mark}</span><div><strong>${safe(x.name)}</strong><small>${safe(x.reason)}</small></div></div>`;
+}
+
+function renderReplacements(r) {
+  const s = r.summary || {};
+  const recs = r.recommendations || [];
+  const efficient = r.already_efficient || [];
+  const skipped = r.not_assessed || [];
+  $('repl-placeholder').classList.add('hidden');
+  $('repl-result').classList.remove('hidden');
+  $('repl-total-year').textContent = money(s.total_yearly_saving_rs);
+  $('repl-total-invest').textContent = money(s.total_investment_rs);
+  const months = numeric(s.overall_payback_months);
+  $('repl-payback').textContent = months === null ? '—' : number(months, 1) + ' months';
+  $('repl-payback-sub').textContent = months !== null && months >= 24 ? '≈ ' + replFmtPayback(months) : '';
+  $('repl-kwh-year').textContent = number(s.kwh_saved_per_year, 1) + ' kWh';
+  $('repl-cards').innerHTML = recs.length
+    ? recs.map(replCardHtml).join('')
+    : '<div class="insight">No replacement is worth recommending right now: everything you entered is either already efficient or could not be matched to a type.</div>';
+  $('repl-efficient').innerHTML = efficient.map(x => replMutedItem(x, '✓')).join('');
+  $('repl-efficient-wrap').classList.toggle('hidden', !efficient.length);
+  $('repl-skipped').innerHTML = skipped.map(x => replMutedItem(x, '–')).join('');
+  $('repl-skipped-wrap').classList.toggle('hidden', !skipped.length);
+  $('repl-assumptions').innerHTML = '<strong>Assumptions</strong><ul>' + (r.assumptions || []).map(a => `<li>${safe(a)}</li>`).join('') + '</ul>';
+  $('repl-status').textContent = recs.length
+    ? 'Found ' + recs.length + ' replacement' + (recs.length === 1 ? '' : 's') + ' worth considering.'
+    : 'No replacements recommended.';
+  // When the two panels are stacked (tablet / phone) bring the results into view.
+  if (window.matchMedia('(max-width: 1180px)').matches) {
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('repl-result').scrollIntoView({behavior: calm ? 'auto' : 'smooth', block: 'start'});
+  }
+}
+
+replSampleRows.forEach(row => addReplRow(row));
+$('repl-add').addEventListener('click', () => addReplRow({}, true));
+$('repl-import').addEventListener('click', importReplFromStudio);
+$('repl-advanced').addEventListener('toggle', () => $('repl-table').classList.toggle('show-adv', $('repl-advanced').open));
+$('repl-form').addEventListener('input', e => e.target.removeAttribute && e.target.removeAttribute('aria-invalid'));
+$('repl-form').addEventListener('submit', event => {
+  event.preventDefault();
+  // Typos in the form are reported with a toast only; withLoading is kept for real server/network failures.
+  let payload;
+  try { payload = collectReplPayload(); } catch (error) { toast(error.message, true); return; }
+  withLoading($('repl-submit'), async () => {
+    const output = await api('replacements', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+    renderReplacements(output.result || {});
+  });
+});
+
+// Load the dropdown once the user is signed in, and again whenever this view opens (covers a failed first try).
+new MutationObserver(loadReplTypes).observe(document.body, {attributes: true, attributeFilter: ['class']});
+new MutationObserver(() => { if ($('view-replacements').classList.contains('active')) loadReplTypes(); })
+  .observe($('view-replacements'), {attributes: true, attributeFilter: ['class']});
+loadReplTypes();
+
+// Energy Copilot: show replacement answers (called from the copilot handler above).
+function renderCopilotReplacements(r) {
+  const list = Array.isArray(r.replacement_actions) ? r.replacement_actions : [];
+  if (!list.length) return;
+  $('agent-actions').innerHTML = list.map(x => `<div class="agent-action"><strong>${safe(x.appliance)} → ${safe(x.replacement)}</strong><span>${number(x.kwh_saved_per_day, 2)} kWh/day · ${money(x.yearly_saving_rs)}/year saved · pays back in ${safe(replFmtPayback(x.payback_months))} (estimate)</span></div>`).join('')
+    + '<button type="button" class="text-action" id="agent-open-replacements">Open Replacement Advisor ↗</button>';
+  $('agent-open-replacements').addEventListener('click', () => navigate('replacements'));
+}
