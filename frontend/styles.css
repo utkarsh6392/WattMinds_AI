@@ -690,6 +690,12 @@ body.auth-loading .auth-boot { display: grid; }
 .repl-detail { font-size: 13px; line-height: 1.6; color: var(--text-2); }
 /* five facts laid out 3 + 2 so no tile is left alone on a row */
 .repl-facts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.repl-facts > div:nth-child(-n+3) { grid-column: span 2; }
+.repl-facts > div:nth-child(n+4) { grid-column: span 3; }
+.repl-facts > div { padding: 10px 12px; background: rgba(0, 0, 0, .22); border: 1px solid var(--line); border-radius: 12px; }
+.repl-facts dt { font-size: 11.5px; color: var(--text-2); }
+.repl-facts dd { margin: 3px 0 0; font: 600 14px var(--font-display); font-variant-numeric: tabular-nums; }
+.repl-note { font-size: 12.5px; line-height: 1.55; color: var(--text-2); }
 .repl-warn { color: var(--amber); }
 
 .priority-badge {
@@ -721,4 +727,110 @@ body.auth-loading .auth-boot { display: grid; }
   .repl-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .repl-facts > div:nth-child(n) { grid-column: span 1; }
   .repl-facts > div:last-child { grid-column: 1 / -1; }
+}
+
+
+/* 14. GLASSMORPHISM THEME -------------------------------------------------- */
+/* An override layer that lifts the earlier "subtle glass" look to full frosted
+   glass: a colourful backdrop for the blur to work on, translucent gradient
+   surfaces, bright edge highlights and soft shadows. Dark, to match the app.
+   To go back to the previous look, delete this whole section and nothing else.
+   Tune the effect with the four --glass-* variables below. */
+:root {
+  --glass: rgba(255, 255, 255, .065);
+  --glass-2: rgba(255, 255, 255, .10);
+  --glass-hi: rgba(255, 255, 255, .16);
+  --line: rgba(255, 255, 255, .14);
+  --line-2: rgba(255, 255, 255, .24);
+
+  --text-2: #a9b6c9;   /* a touch lighter than before so muted text stays AA on the brighter glass */
+
+  --glass-blur: 22px;
+  --glass-saturate: 170%;
+  --glass-fill: linear-gradient(145deg, rgba(255, 255, 255, .15), rgba(255, 255, 255, .045) 55%, rgba(255, 255, 255, .08));
+  --glass-shadow: 0 12px 40px rgba(2, 6, 16, .45), inset 0 1px 0 rgba(255, 255, 255, .30), inset 0 0 0 1px rgba(255, 255, 255, .04);
+}
+
+/* Blur only shows when there is something colourful behind it, so the page
+   background gets four soft colour glows (five, fixed, so panels glide over them). */
+body {
+  background:
+    radial-gradient(46rem 34rem at 88% -8%, rgba(63, 224, 197, .40), transparent 68%),
+    radial-gradient(40rem 32rem at 4% 12%, rgba(124, 92, 255, .44), transparent 70%),
+    radial-gradient(44rem 34rem at 98% 78%, rgba(47, 123, 255, .38), transparent 70%),
+    radial-gradient(36rem 28rem at 10% 98%, rgba(255, 95, 162, .26), transparent 72%),
+    radial-gradient(38rem 26rem at 52% 48%, rgba(96, 120, 255, .16), transparent 72%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* Frosted surfaces (only these blur - nested tiles just use translucent fills) */
+.panel, .metric-card, .hero-card, .auth-card {
+  background: var(--glass-fill);
+  border-color: var(--line-2);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+.hero-card {
+  background:
+    radial-gradient(40rem 22rem at 88% 50%, rgba(63, 224, 197, .24), transparent 70%),
+    var(--glass-fill);
+}
+/* The chart tile is a little darker so the line stays easy to read, but still glass */
+.overview-chart {
+  background: linear-gradient(145deg, rgba(14, 20, 36, .62), rgba(14, 20, 36, .40));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+.sidebar, .topbar {
+  background: rgba(14, 20, 36, .42);
+  -webkit-backdrop-filter: blur(26px) saturate(165%);
+  backdrop-filter: blur(26px) saturate(165%);
+  border-color: var(--line);
+}
+.topbar { box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .05), 0 8px 30px rgba(2, 6, 16, .25); }
+.user-dropdown, .toast {
+  background: linear-gradient(145deg, rgba(40, 52, 82, .78), rgba(16, 23, 40, .72));
+  border-color: var(--line-2);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+.reset-screen { background: rgba(8, 12, 20, .55); }
+
+/* Controls and nested tiles: translucent, with a bright top edge */
+input, textarea, select { background: rgba(255, 255, 255, .07); border-color: var(--line-2); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .25); }
+input:hover, textarea:hover, select:hover { background: rgba(255, 255, 255, .09); }
+input:focus-visible, textarea:focus-visible, select:focus-visible { background: rgba(255, 255, 255, .11); }
+.selected-file, .auth-tabs, .json-output, .repl-facts > div { background: rgba(255, 255, 255, .06); }
+th { background: rgba(22, 31, 52, .85); }
+.workspace, .system-mini, .quick-link, .result-stat-grid > div, .compare > div, .agent-action, .insight,
+.agent-answer, .info-strip, .raw-details, .repl-card, .check-cards label, .current-chip {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+.nav-item.active { box-shadow: inset 0 0 0 1px rgba(63, 224, 197, .28); }
+.btn { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14); }
+.btn.primary { box-shadow: 0 8px 28px rgba(63, 224, 197, .34), inset 0 1px 0 rgba(255, 255, 255, .45); }
+.brand-icon { box-shadow: 0 8px 26px rgba(63, 224, 197, .35), inset 0 1px 0 rgba(255, 255, 255, .5); }
+
+/* A little lift on hover (the global reduced-motion rule switches this off) */
+.metric-card, .quick-link, .repl-card { transition: transform .2s var(--ease), border-color .2s, background .2s; }
+.metric-card:hover, .quick-link:hover, .repl-card:hover { transform: translateY(-2px); border-color: var(--line-2); }
+
+/* The phone sidebar slides over content, so it needs to stay readable */
+@media (max-width: 900px) {
+  .sidebar { background: rgba(12, 18, 32, .90); }
+}
+
+/* Solid surfaces where blur is unsupported or the user asks for less transparency */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .panel, .metric-card, .hero-card, .auth-card, .overview-chart { background: #111826; }
+  .sidebar, .topbar { background: #0a0f18; }
+  .toast, .user-dropdown { background: #0e1522; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .panel, .metric-card, .hero-card, .auth-card, .overview-chart { background: #111826; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .sidebar, .topbar { background: #0a0f18; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .toast, .user-dropdown { background: #0e1522; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .reset-screen { background: #080c14; }
 }
