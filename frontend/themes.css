@@ -1,0 +1,326 @@
+/* ==========================================================================
+   WattMinds 2.0 - THEMES + POLISH
+   Loaded after styles.css. styles.css is the base (dark, glass); this file
+   adds four switchable themes and a few finishing touches.
+
+   Themes are chosen with  <html data-theme="aurora | glass | dusk | light">
+   (the switcher in the top bar and Ctrl+K set it; themes.js remembers it).
+
+   Sections: 1 Shared hooks · 2 Glass (base) · 3 Aurora · 4 Warm Dusk · 5 Light
+             6 Fallbacks · 7 Switcher · 8 Command palette · 9 Polish
+   To remove everything: delete the two tags for themes.css / themes.js in
+   index.html (and the small switcher markup in the top bar).
+   ========================================================================== */
+
+/* 1. SHARED HOOKS ---------------------------------------------------------- */
+/* Every theme only has to set these variables. The defaults below equal the
+   Glass look that styles.css already draws, so "glass" needs no overrides. */
+:root {
+  --body-bg:
+    radial-gradient(46rem 34rem at 88% -8%, rgba(var(--accent-rgb), .40), transparent 68%),
+    radial-gradient(40rem 32rem at 4% 12%, rgba(124, 92, 255, .44), transparent 70%),
+    radial-gradient(44rem 34rem at 98% 78%, rgba(47, 123, 255, .38), transparent 70%),
+    radial-gradient(36rem 28rem at 10% 98%, rgba(255, 95, 162, .26), transparent 72%),
+    radial-gradient(34rem 26rem at 48% 46%, rgba(120, 100, 255, .16), transparent 72%),
+    var(--bg);
+  --sidebar-bg: rgba(14, 20, 36, .42);
+  --sidebar-bg-mobile: rgba(12, 18, 32, .90);
+  --pop-bg: linear-gradient(145deg, rgba(40, 52, 82, .78), rgba(16, 23, 40, .72));
+  --chart-bg: linear-gradient(145deg, rgba(14, 20, 36, .62), rgba(14, 20, 36, .40));
+  --input-bg: rgba(255, 255, 255, .07);
+  --input-bg-hover: rgba(255, 255, 255, .09);
+  --input-bg-focus: rgba(255, 255, 255, .11);
+  --input-shadow: inset 0 1px 2px rgba(0, 0, 0, .25);
+  --tile-bg: rgba(255, 255, 255, .06);
+  --th-bg: rgba(22, 31, 52, .85);
+  --scrim: rgba(8, 12, 20, .55);
+  --code-text: #c3d2e6;
+  --option-bg: #0e1522;
+  --solid-surface: #111826;
+  --solid-bar: #0a0f18;
+  --solid-pop: #0e1522;
+  --btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .14);
+  --card-glow: rgba(var(--accent-rgb), .13);
+  --scroll: rgba(255, 255, 255, .18);
+  --chart-line: #3fe0c5;
+  --chart-text: #9aa8bc;
+  --chart-grid: rgba(255, 255, 255, .07);
+  color-scheme: dark;
+}
+
+body { background: var(--body-bg); background-attachment: fixed; }
+* { scrollbar-color: var(--scroll) transparent; }
+.sidebar, .topbar { background: var(--sidebar-bg); }
+.user-dropdown, .toast { background: var(--pop-bg); }
+.overview-chart { background: var(--chart-bg); }
+input, textarea, select { background: var(--input-bg); box-shadow: var(--input-shadow); }
+input:hover, textarea:hover, select:hover { background: var(--input-bg-hover); }
+input:focus-visible, textarea:focus-visible, select:focus-visible { background: var(--input-bg-focus); }
+.selected-file, .auth-tabs, .json-output, .repl-facts > div { background: var(--tile-bg); }
+th { background: var(--th-bg); }
+.reset-screen { background: var(--scrim); }
+.json-output { color: var(--code-text); }
+.repl-table select option { background: var(--option-bg); }
+.btn { box-shadow: var(--btn-shadow); }
+@media (max-width: 900px) { .sidebar { background: var(--sidebar-bg-mobile); } }
+
+
+/* 3. AURORA GLASS (default) ------------------------------------------------- */
+/* Glass panels over slowly drifting aurora colour. */
+:root[data-theme="aurora"] body { background: none; }
+:root[data-theme="aurora"] {
+  --text-2: #b9c6dc; --card-glow: rgba(150, 255, 225, .12);
+  /* a faint dark base keeps text readable where a bright aurora band passes behind a card */
+  --glass-fill: linear-gradient(rgba(6, 10, 26, .30), rgba(6, 10, 26, .30)),
+                linear-gradient(145deg, rgba(200, 210, 255, .15), rgba(200, 210, 255, .04) 55%, rgba(160, 255, 220, .08));
+}
+:root[data-theme="aurora"] body::before {
+  content: ""; position: fixed; inset: -22%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(40rem 32rem at 22% 28%, rgba(124, 92, 255, .66), transparent 66%),
+    radial-gradient(38rem 30rem at 78% 16%, rgba(63, 224, 197, .56), transparent 66%),
+    radial-gradient(42rem 32rem at 72% 84%, rgba(47, 123, 255, .50), transparent 66%),
+    radial-gradient(32rem 26rem at 14% 86%, rgba(255, 95, 162, .42), transparent 66%),
+    radial-gradient(30rem 22rem at 50% 50%, rgba(120, 255, 190, .16), transparent 70%);
+  animation: aurora-drift 26s ease-in-out infinite alternate;
+  will-change: transform;
+}
+body.auth-loading::before { animation: none !important; }
+@keyframes aurora-drift {
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  50%  { transform: translate3d(3%, -2.5%, 0) rotate(7deg) scale(1.08); }
+  100% { transform: translate3d(-3%, 3%, 0) rotate(-6deg) scale(1.03); }
+}
+
+
+/* 4. WARM DUSK -------------------------------------------------------------- */
+/* Plum and charcoal with peach light - rounder, softer, lamp-lit. */
+:root[data-theme="dusk"] {
+  --bg: #15101c; --bg-raise: #1c1526;
+  --text: #f6ebe0; --text-2: #cdbccb;
+  --accent: #ffa972; --accent-rgb: 255, 169, 114; --accent-ink: #2a1203; --accent-hover: #ffbd90;
+  --blue: #b9a4ff; --blue-rgb: 185, 164, 255;
+  --amber: #f2d06b; --red: #ff6b72;
+  --r-lg: 26px; --r-md: 17px; --r-sm: 12px;
+
+  --glass: rgba(255, 226, 200, .06); --glass-2: rgba(255, 226, 200, .10); --glass-hi: rgba(255, 226, 200, .16);
+  --line: rgba(255, 226, 200, .15); --line-2: rgba(255, 226, 200, .26);
+  --glass-fill: linear-gradient(145deg, rgba(255, 226, 200, .14), rgba(255, 226, 200, .04) 55%, rgba(255, 226, 200, .07));
+  --glass-shadow: 0 14px 44px rgba(12, 4, 16, .5), inset 0 1px 0 rgba(255, 236, 220, .28), inset 0 0 0 1px rgba(255, 226, 200, .04);
+  --glass-blur: 24px; --glass-saturate: 150%;
+
+  --body-bg:
+    radial-gradient(46rem 34rem at 90% -8%, rgba(255, 150, 90, .32), transparent 68%),
+    radial-gradient(42rem 32rem at 2% 14%, rgba(196, 84, 164, .34), transparent 70%),
+    radial-gradient(44rem 34rem at 98% 80%, rgba(255, 112, 134, .22), transparent 70%),
+    radial-gradient(38rem 28rem at 8% 98%, rgba(116, 84, 210, .26), transparent 72%),
+    var(--bg);
+  --sidebar-bg: rgba(30, 19, 38, .50); --sidebar-bg-mobile: rgba(26, 17, 34, .92);
+  --pop-bg: linear-gradient(145deg, rgba(70, 48, 78, .82), rgba(30, 20, 40, .78));
+  --chart-bg: linear-gradient(145deg, rgba(24, 15, 32, .62), rgba(24, 15, 32, .40));
+  --input-bg: rgba(255, 226, 200, .07); --input-bg-hover: rgba(255, 226, 200, .10); --input-bg-focus: rgba(255, 226, 200, .13);
+  --tile-bg: rgba(255, 226, 200, .06); --th-bg: rgba(40, 27, 50, .88);
+  --scrim: rgba(18, 10, 26, .58);
+  --code-text: #ecd9cc; --option-bg: #1c1526;
+  --solid-surface: #1f1729; --solid-bar: #130e1a; --solid-pop: #1c1526;
+  --btn-shadow: inset 0 1px 0 rgba(255, 236, 220, .16);
+  --scroll: rgba(255, 226, 200, .2);
+  --chart-line: #ffa972; --chart-text: #cdbccb; --chart-grid: rgba(255, 226, 200, .09);
+}
+:root[data-theme="dusk"] .hero-card {
+  background: radial-gradient(40rem 22rem at 88% 50%, rgba(255, 150, 90, .26), transparent 70%), var(--glass-fill);
+}
+:root[data-theme="dusk"] .metric-symbol.purple { color: #e2a8ff; background: rgba(226, 168, 255, .13); }
+
+
+/* 5. LIGHT (soft, cream, gently raised) ------------------------------------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ece6db; --bg-raise: #f3eee5;
+  --text: #2a2833; --text-2: #5a5766;
+  --accent: #086a5b; --accent-rgb: 8, 106, 91; --accent-ink: #ffffff; --accent-hover: #0b7d6b;
+  --blue: #2456b8; --blue-rgb: 36, 86, 184;
+  --amber: #8a5200; --red: #b3262f;
+
+  --glass: rgba(120, 95, 60, .05); --glass-2: rgba(120, 95, 60, .08); --glass-hi: rgba(120, 95, 60, .13);
+  --line: rgba(90, 70, 40, .14); --line-2: rgba(90, 70, 40, .24);
+  --glass-fill: linear-gradient(145deg, #f5f0e7, #eae4d9);
+  --glass-shadow: 9px 9px 22px rgba(168, 150, 120, .40), -8px -8px 20px rgba(255, 255, 255, .85), inset 0 1px 0 rgba(255, 255, 255, .7);
+  --glass-blur: 0px; --glass-saturate: 100%;
+
+  --body-bg:
+    radial-gradient(52rem 32rem at 86% -10%, rgba(255, 255, 255, .75), transparent 70%),
+    radial-gradient(40rem 30rem at 0% 100%, rgba(8, 106, 91, .08), transparent 70%),
+    radial-gradient(36rem 26rem at 100% 90%, rgba(36, 86, 184, .06), transparent 70%),
+    var(--bg);
+  --sidebar-bg: rgba(240, 234, 223, .88); --sidebar-bg-mobile: rgba(240, 234, 223, .98);
+  --pop-bg: linear-gradient(145deg, #f8f4ec, #ece6db);
+  --chart-bg: linear-gradient(145deg, #efe9de, #e8e2d6);
+  --input-bg: rgba(120, 95, 60, .07); --input-bg-hover: rgba(120, 95, 60, .09); --input-bg-focus: rgba(255, 255, 255, .6);
+  --input-shadow: inset 3px 3px 7px rgba(168, 150, 120, .35), inset -3px -3px 7px rgba(255, 255, 255, .8);
+  --tile-bg: rgba(120, 95, 60, .06); --th-bg: #e4ddd0;
+  --scrim: rgba(236, 230, 219, .78);
+  --code-text: #3b3a48; --option-bg: #f3eee5;
+  --solid-surface: #efe9de; --solid-bar: #e9e3d8; --solid-pop: #f3eee5;
+  --btn-shadow: 4px 4px 10px rgba(168, 150, 120, .35), -4px -4px 10px rgba(255, 255, 255, .85);
+  --card-glow: rgba(255, 255, 255, .55);
+  --scroll: rgba(90, 70, 40, .28);
+  --chart-line: #086a5b; --chart-text: #5a5766; --chart-grid: rgba(90, 70, 40, .12);
+}
+:root[data-theme="light"] ::selection { background: rgba(var(--accent-rgb), .22); }
+:root[data-theme="light"] .topbar { box-shadow: 0 6px 20px rgba(168, 150, 120, .25); }
+:root[data-theme="light"] .sidebar { box-shadow: 6px 0 22px rgba(168, 150, 120, .22); }
+:root[data-theme="light"] .hero-card {
+  background: radial-gradient(40rem 22rem at 88% 50%, rgba(var(--accent-rgb), .12), transparent 70%), var(--glass-fill);
+}
+:root[data-theme="light"] .btn.primary { box-shadow: 5px 6px 16px rgba(8, 106, 91, .32), -4px -4px 10px rgba(255, 255, 255, .8); }
+:root[data-theme="light"] .btn:active:not(:disabled) { box-shadow: inset 3px 3px 7px rgba(168, 150, 120, .4), inset -3px -3px 7px rgba(255, 255, 255, .7); }
+:root[data-theme="light"] .brand-icon { color: #fff; box-shadow: 4px 6px 16px rgba(8, 106, 91, .32), -3px -3px 8px rgba(255, 255, 255, .8); }
+:root[data-theme="light"] .nav-item.active { background: var(--accent-soft); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .3); }
+:root[data-theme="light"] .workspace, :root[data-theme="light"] .system-mini, :root[data-theme="light"] .quick-link,
+:root[data-theme="light"] .result-stat-grid > div, :root[data-theme="light"] .compare > div, :root[data-theme="light"] .agent-action,
+:root[data-theme="light"] .insight, :root[data-theme="light"] .agent-answer, :root[data-theme="light"] .info-strip,
+:root[data-theme="light"] .raw-details, :root[data-theme="light"] .repl-card, :root[data-theme="light"] .check-cards label,
+:root[data-theme="light"] .current-chip { box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .7), 2px 2px 8px rgba(168, 150, 120, .18); }
+:root[data-theme="light"] .repl-facts > div { box-shadow: inset 2px 2px 5px rgba(168, 150, 120, .25), inset -2px -2px 5px rgba(255, 255, 255, .7); }
+:root[data-theme="light"] .metric-symbol.purple { color: #5b3fd1; background: rgba(91, 63, 209, .1); }
+:root[data-theme="light"] .priority-badge.medium { background: rgba(138, 82, 0, .1); border-color: rgba(138, 82, 0, .35); }
+:root[data-theme="light"] .toast { color: var(--text); }
+:root[data-theme="light"] .auth-screen { background: transparent; }
+:root[data-theme="light"] .hero-pill { color: var(--accent); }
+
+
+/* 6. FALLBACKS ------------------------------------------------------------- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .panel, .metric-card, .hero-card, .auth-card, .overview-chart { background: var(--solid-surface); }
+  .sidebar, .topbar { background: var(--solid-bar); }
+  .toast, .user-dropdown { background: var(--solid-pop); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .panel, .metric-card, .hero-card, .auth-card, .overview-chart { background: var(--solid-surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .sidebar, .topbar { background: var(--solid-bar); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .toast, .user-dropdown { background: var(--solid-pop); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .reset-screen { background: var(--solid-bar); }
+  :root[data-theme="aurora"] body::before { display: none; }
+}
+
+
+/* 7. THEME SWITCHER (top bar) ---------------------------------------------- */
+.theme-wrap, .palette-wrap { position: relative; }
+.user-dropdown { background: var(--solid-pop); }
+.theme-btn { position: relative; }
+.theme-dot {
+  display: block; width: 18px; height: 18px; border-radius: 50%;
+  background: conic-gradient(from 210deg, #3fe0c5, #7c5cff, #ff5fa2, #ffa972, #3fe0c5);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35);
+}
+.theme-menu {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 60; width: 292px; padding: 8px;
+  display: grid; gap: 4px;
+  /* solid: this menu sits inside the top bar, whose own blur would leave a nested blur with nothing to sample */
+  background: var(--solid-pop); border: 1px solid var(--line-2); border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(2, 6, 16, .45);
+}
+:root[data-theme="light"] .theme-menu { box-shadow: 10px 12px 30px rgba(168, 150, 120, .4), -6px -6px 16px rgba(255, 255, 255, .8); }
+.theme-menu button {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; text-align: left;
+  background: transparent; border: 1px solid transparent; border-radius: 12px; color: var(--text);
+}
+.theme-menu button:hover { background: var(--glass-2); }
+.theme-menu button[aria-checked="true"] { background: var(--accent-soft); border-color: rgba(var(--accent-rgb), .35); }
+.theme-menu button b { display: block; font-size: 13.5px; font-weight: 700; }
+.theme-menu button small { display: block; font-size: 12px; color: var(--text-2); }
+.swatch { flex: none; width: 34px; height: 34px; border-radius: 11px; border: 1px solid var(--line-2); }
+.sw-aurora { background: radial-gradient(circle at 25% 30%, #7c5cff, transparent 60%), radial-gradient(circle at 75% 25%, #3fe0c5, transparent 60%), radial-gradient(circle at 70% 85%, #2f7bff, transparent 60%), #0b1020; }
+.sw-glass  { background: linear-gradient(145deg, rgba(255, 255, 255, .35), rgba(255, 255, 255, .05)), linear-gradient(160deg, #1a2a4a, #0a1020); }
+.sw-dusk   { background: radial-gradient(circle at 80% 15%, #ff9a5a, transparent 60%), radial-gradient(circle at 15% 80%, #c454a4, transparent 60%), #1b1324; }
+.sw-light  { background: linear-gradient(145deg, #f7f2e9, #e6dfd2); box-shadow: 3px 3px 7px rgba(168, 150, 120, .45), -3px -3px 7px #fff; border-color: transparent; }
+.palette-btn { display: inline-flex; align-items: center; gap: 8px; }
+.palette-btn kbd, .palette-hint kbd {
+  padding: 1px 6px; font: 600 11px var(--font-mono); color: var(--text-2);
+  background: var(--glass-2); border: 1px solid var(--line-2); border-radius: 6px;
+}
+
+
+/* 8. COMMAND PALETTE (Ctrl/Cmd + K) ---------------------------------------- */
+.palette-scrim {
+  position: fixed; inset: 0; z-index: 300; display: grid; justify-items: center; align-content: start; padding: 14vh 16px 16px;
+  background: var(--scrim); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.palette {
+  width: min(560px, 100%); overflow: hidden;
+  background: var(--pop-bg); border: 1px solid var(--line-2); border-radius: 20px;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: 0 30px 80px rgba(2, 6, 16, .55);
+  animation: palette-in .18s var(--ease);
+}
+:root[data-theme="light"] .palette { background: #f6f1e8; box-shadow: 14px 18px 44px rgba(168, 150, 120, .5), -8px -8px 22px rgba(255, 255, 255, .8); }
+@keyframes palette-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } to { opacity: 1; transform: none; } }
+.palette input {
+  width: 100%; padding: 18px 20px; font-size: 16px; color: var(--text);
+  background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none;
+}
+.palette input::placeholder { color: var(--text-2); opacity: 1; }
+.palette input:focus-visible { outline: none; background: transparent; box-shadow: none; border-bottom-color: var(--accent); }
+.palette-list { max-height: min(46vh, 380px); margin: 0; padding: 8px; overflow-y: auto; list-style: none; }
+.palette-group { padding: 10px 12px 4px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+.palette-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; color: var(--text); cursor: pointer; }
+.palette-item .pi-icon { flex: none; width: 26px; text-align: center; color: var(--accent); }
+.palette-item small { margin-left: auto; color: var(--text-2); font-size: 12px; }
+.palette-item[aria-selected="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .35); }
+.palette-empty { padding: 22px; text-align: center; color: var(--text-2); }
+.palette-hint { display: flex; gap: 14px; padding: 10px 16px; font-size: 12px; color: var(--text-2); border-top: 1px solid var(--line); }
+
+
+/* 9. POLISH ---------------------------------------------------------------- */
+/* a. Soft glow that follows the pointer, painted BEHIND the card's content (z-index -1 inside its own stacking context) */
+.panel, .metric-card, .hero-card, .quick-link, .repl-card { position: relative; isolation: isolate; }
+.panel::before, .metric-card::before, .hero-card::before, .quick-link::before, .repl-card::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(300px circle at var(--mx, 50%) var(--my, 50%), var(--card-glow), transparent 65%);
+  transition: opacity .25s var(--ease);
+}
+.panel:hover::before, .metric-card:hover::before, .hero-card:hover::before, .quick-link:hover::before, .repl-card:hover::before { opacity: 1; }
+
+/* b. Views ease in; the metric cards rise one after another */
+/* transform only: opacity/filter on .view would stop the nested glass panels from blurring while it runs */
+@keyframes view-in { from { transform: translateY(10px); } to { transform: none; } }
+.view.active { animation: view-in .38s var(--ease); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.view.active .metrics-grid > .metric-card { animation: rise .55s var(--ease) both; }
+.view.active .metrics-grid > .metric-card:nth-child(2) { animation-delay: .06s; }
+.view.active .metrics-grid > .metric-card:nth-child(3) { animation-delay: .12s; }
+.view.active .metrics-grid > .metric-card:nth-child(4) { animation-delay: .18s; }
+.metric-value strong { font-variant-numeric: tabular-nums; }
+
+/* c. Skeletons while an analysis runs (themes.js adds/removes them) */
+.skeleton { display: grid; gap: 12px; padding: 4px 0; }
+.sk-line, .sk-tile {
+  border-radius: 12px; background: var(--glass-2);
+  background-image: linear-gradient(100deg, transparent 20%, var(--glass-hi) 50%, transparent 80%);
+  background-size: 220% 100%; animation: shimmer 1.4s linear infinite;
+}
+.sk-line { height: 14px; } .sk-line.w60 { width: 60%; } .sk-line.w85 { width: 85%; } .sk-line.title { height: 20px; width: 45%; }
+.sk-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.sk-tile { height: 74px; border-radius: 14px; }
+@keyframes shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+.is-loading > .empty-state, .is-loading > [id$="-result"] { display: none !important; }
+.btn.primary:disabled {
+  background-image: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .35) 50%, transparent 70%);
+  background-size: 220% 100%; animation: shimmer 1.3s linear infinite;
+}
+
+/* d. Phones */
+@media (max-width: 640px) {
+  .palette-btn kbd, .palette-btn .pb-label { display: none; }
+  .theme-menu { position: fixed; left: 16px; right: 16px; top: 72px; width: auto; }
+  .palette-scrim { padding-top: 10vh; }
+}
+
+/* Narrow phones: the extra top-bar buttons need the room the status chip used */
+@media (max-width: 520px) {
+  .top-actions { gap: 8px; }
+  .top-actions .current-chip { display: none; }
+  .palette-btn { padding: 8px 10px; }
+}
