@@ -108,6 +108,11 @@ function drawChart() {
   canvas.height = Math.round(height * scale);
   const ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
+  const themeCss = getComputedStyle(document.documentElement);
+  const textColor = themeCss.getPropertyValue('--chart-text').trim() || '#9aa8bc';
+  const gridColor = themeCss.getPropertyValue('--chart-grid').trim() || 'rgba(255,255,255,.07)';
+  const lineColor = themeCss.getPropertyValue('--chart-line').trim() || '#3fe0c5';
+  const lineRgb = themeCss.getPropertyValue('--accent-rgb').trim() || '63, 224, 197';
   const padding = {left: 33, right: 15, top: 16, bottom: 25};
   const cw = width - padding.left - padding.right;
   const ch = height - padding.top - padding.bottom;
@@ -116,11 +121,11 @@ function drawChart() {
   ctx.textAlign = 'right';
   for (let i = 0; i <= 4; i++) {
     const y = padding.top + (ch * i) / 4;
-    ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
     ctx.beginPath();ctx.moveTo(padding.left, y);ctx.lineTo(width-padding.right,y);ctx.stroke();
-    ctx.fillStyle = '#9aa8bc'; ctx.fillText((ymax*(4-i)/4).toFixed(1),padding.left-8,y+3);
+    ctx.fillStyle = textColor; ctx.fillText((ymax*(4-i)/4).toFixed(1),padding.left-8,y+3);
   }
-  ctx.textAlign = 'center';ctx.fillStyle = '#9aa8bc';
+  ctx.textAlign = 'center';ctx.fillStyle = textColor;
   for (let i = 0; i < chartData.length; i += Math.max(1,Math.ceil(chartData.length/6))) {
     const x = padding.left + (cw * i) / Math.max(1,chartData.length-1);
     ctx.fillText((chartLabels[i] || i) + (chartLabels[i]?.length === 2 ? ':00' : ''),x,height-5);
@@ -131,11 +136,11 @@ function drawChart() {
   points.slice(1).forEach(p => ctx.lineTo(p.x,p.y));
   ctx.lineTo(points.at(-1).x,padding.top+ch);ctx.lineTo(points[0].x,padding.top+ch);ctx.closePath();
   const gradient = ctx.createLinearGradient(0,padding.top,0,height);
-  gradient.addColorStop(0,'rgba(63,224,197,.28)');gradient.addColorStop(1,'rgba(63,224,197,0)');
+  gradient.addColorStop(0,'rgba(' + lineRgb + ',.28)');gradient.addColorStop(1,'rgba(' + lineRgb + ',0)');
   ctx.fillStyle = gradient;ctx.fill();
   ctx.beginPath();points.forEach((p,i) => i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
-  ctx.strokeStyle = '#3fe0c5';ctx.lineWidth = 2.7;ctx.lineJoin = 'round';ctx.stroke();
-  const last = points.at(-1);ctx.fillStyle = '#3fe0c5';ctx.beginPath();ctx.arc(last.x,last.y,4,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle = lineColor;ctx.lineWidth = 2.7;ctx.lineJoin = 'round';ctx.stroke();
+  const last = points.at(-1);ctx.fillStyle = lineColor;ctx.beginPath();ctx.arc(last.x,last.y,4,0,Math.PI*2);ctx.fill();
 }
 window.addEventListener('resize', () => requestAnimationFrame(drawChart));
 

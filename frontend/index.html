@@ -8,10 +8,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap">
-  <link rel="stylesheet" href="/styles.css?v=bento4">
+  <script>
+    /* Apply the saved theme before first paint so there is no flash. Default: Aurora, or Soft Sand if the system is set to light. */
+    (function () {
+      var ok = ['aurora', 'glass', 'dusk', 'light'], t = null;
+      try { t = localStorage.getItem('wattminds-theme'); } catch (e) {}
+      if (ok.indexOf(t) === -1) t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'aurora';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <link rel="stylesheet" href="/styles.css?v=bento5">
+  <link rel="stylesheet" href="/themes.css?v=1">
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script defer src="/auth.js?v=bento2"></script>
-  <script defer src="/app.js?v=bento3"></script>
+  <script defer src="/app.js?v=bento4"></script>
+  <script defer src="/themes.js?v=1"></script>
 </head>
 <body class="auth-loading">
   <div class="auth-boot" aria-label="Loading"><span class="auth-spinner"></span></div>
@@ -97,7 +108,7 @@
     <div class="main-column">
       <header class="topbar">
         <div class="top-left"><button id="menu-btn" class="icon-button menu-btn" aria-label="Toggle menu">☰</button><span class="breadcrumb">Workspace</span><span class="crumb-slash">/</span><span id="breadcrumb-current">Overview</span></div>
-        <div class="top-actions"><span class="current-chip"><span id="header-status-dot" class="live-dot"></span><span id="header-status">Connecting</span></span><button id="date-chip" class="date-chip" type="button"></button><div class="user-menu-wrap">
+        <div class="top-actions"><button type="button" id="palette-btn" class="btn small palette-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span aria-hidden="true">⌕</span><span class="pb-label">Search</span><kbd id="palette-kbd">Ctrl K</kbd></button><div class="theme-wrap" id="theme-wrap"><button type="button" id="theme-btn" class="icon-button theme-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="theme-menu" aria-label="Change theme"><span class="theme-dot"></span></button><div class="theme-menu hidden" id="theme-menu" role="menu" aria-label="Theme"></div></div><span class="current-chip"><span id="header-status-dot" class="live-dot"></span><span id="header-status">Connecting</span></span><button id="date-chip" class="date-chip" type="button"></button><div class="user-menu-wrap">
           <button type="button" id="user-menu-button" class="user-menu-button" aria-haspopup="true" aria-expanded="false" aria-controls="user-dropdown">
             <span class="avatar" id="user-avatar">W</span>
           </button>
